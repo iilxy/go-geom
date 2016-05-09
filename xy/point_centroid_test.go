@@ -17,8 +17,8 @@ func TestPointCentroidCalculator_GetCentroid_NoCoordsAdded(t *testing.T) {
 }
 
 type pointTestData struct {
-	points   []*geom.Point
-	centroid geom.Coord
+	points []*geom.Point
+	result geom.Coord
 }
 
 func TestPointGetCentroid(t *testing.T) {
@@ -28,14 +28,14 @@ func TestPointGetCentroid(t *testing.T) {
 				geom.NewPointFlat(geom.XY, []float64{0, 0}),
 				geom.NewPointFlat(geom.XY, []float64{2, 2}),
 			},
-			centroid: geom.Coord{1, 1},
+			result: geom.Coord{1, 1},
 		},
 		{
 			points: []*geom.Point{
 				geom.NewPointFlat(geom.XY, []float64{0, 0}),
 				geom.NewPointFlat(geom.XY, []float64{2, 0}),
 			},
-			centroid: geom.Coord{1, 0},
+			result: geom.Coord{1, 0},
 		},
 		{
 			points: []*geom.Point{
@@ -44,7 +44,7 @@ func TestPointGetCentroid(t *testing.T) {
 				geom.NewPointFlat(geom.XY, []float64{2, 2}),
 				geom.NewPointFlat(geom.XY, []float64{0, 2}),
 			},
-			centroid: geom.Coord{1, 1},
+			result: geom.Coord{1, 1},
 		},
 	} {
 		checkPointsCentroidFunc(t, i, tc)
@@ -59,8 +59,8 @@ func TestPointGetCentroid(t *testing.T) {
 func checkPointsCentroidFunc(t *testing.T, i int, tc pointTestData) {
 	centroid := xy.PointsCentroid(tc.points[0], tc.points[1:]...)
 
-	if !reflect.DeepEqual(tc.centroid, centroid) {
-		t.Errorf("Test '%v' failed: expected centroid for polygon array to be\n%v but was \n%v", i+1, tc.centroid, centroid)
+	if !reflect.DeepEqual(tc.result, centroid) {
+		t.Errorf("Test '%v' failed: expected centroid for polygon array to be\n%v but was \n%v", i+1, tc.result, centroid)
 	}
 
 }
@@ -73,25 +73,28 @@ func checkPointCentroidFlatFunc(t *testing.T, i int, tc pointTestData) {
 	}
 	centroid := xy.PointsCentroidFlat(geom.XY, data)
 
-	if !reflect.DeepEqual(tc.centroid, centroid) {
-		t.Errorf("Test '%v' failed: expected centroid for polygon array to be\n%v but was \n%v", i+1, tc.centroid, centroid)
+	if !reflect.DeepEqual(tc.result, centroid) {
+		t.Errorf("Test '%v' failed: expected centroid for polygon array to be\n%v but was \n%v", i+1, tc.result, centroid)
 	}
 
 }
 func checkPointCentroidMultiPoint(t *testing.T, i int, tc pointTestData) {
-	data := make([]float64, len(tc.points)*2, len(tc.points)*2)
+	centroid := xy.MultiPointCentroid(createMultiPoint(tc.points))
 
-	for i, p := range tc.points {
+	if !reflect.DeepEqual(tc.result, centroid) {
+		t.Errorf("Test '%v' failed: expected centroid for multipoint to be\n%v but was \n%v", i+1, tc.result, centroid)
+	}
+}
+
+func createMultiPoint(points []*geom.Point) *geom.MultiPoint {
+	data := make([]float64, len(points)*2, len(points)*2)
+
+	for i, p := range points {
 		flatCoords := p.FlatCoords()
 		data[i*2] = flatCoords[0]
 		data[(i*2)+1] = flatCoords[1]
 	}
-	line := geom.NewMultiPointFlat(geom.XY, data)
-	centroid := xy.MultiPointCentroid(line)
-
-	if !reflect.DeepEqual(tc.centroid, centroid) {
-		t.Errorf("Test '%v' failed: expected centroid for multipoint to be\n%v but was \n%v", i+1, tc.centroid, centroid)
-	}
+	return geom.NewMultiPointFlat(geom.XY, data)
 }
 
 func checkAddEachPoint(t *testing.T, i int, tc pointTestData) {
@@ -101,8 +104,8 @@ func checkAddEachPoint(t *testing.T, i int, tc pointTestData) {
 	}
 	centroid := calc.GetCentroid()
 
-	if !reflect.DeepEqual(tc.centroid, centroid) {
-		t.Errorf("Test '%v' failed: expected centroid for polygon array to be\n%v but was \n%v", i+1, tc.centroid, centroid)
+	if !reflect.DeepEqual(tc.result, centroid) {
+		t.Errorf("Test '%v' failed: expected centroid for polygon array to be\n%v but was \n%v", i+1, tc.result, centroid)
 	}
 
 }
