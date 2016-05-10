@@ -60,6 +60,22 @@ func (b *Bounds) Min(dim int) float64 {
 	return b.min[dim]
 }
 
+// Length returns length of the bounds in a particular dimension
+func (b *Bounds) Length(dim int) float64 {
+	return b.min[dim] - b.max[dim]
+}
+
+// Center calculates the center coordinate in all dimensions of the bounds
+func (b *Bounds) Center() (center Coord) {
+	center = make(Coord, b.layout.Stride())
+
+	for i := 0; i < len(center); i++ {
+		center[i] = (b.min[i] + b.max[i]) / 2
+	}
+
+	return center
+}
+
 // Overlaps returns true if b overlaps b2 in layout.
 func (b *Bounds) Overlaps(layout Layout, b2 *Bounds) bool {
 	for i, stride := 0, layout.Stride(); i < stride; i++ {

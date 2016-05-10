@@ -8,59 +8,101 @@ import (
 )
 
 func TestLinesInteriorPoint(t *testing.T) {
-	for i, tc := range []lineDataType{
-		//{
-		//	lines: []*geom.LineString{
-		//		geom.NewLineStringFlat(geom.XY, []float64{0, 0, 10, 10}),
-		//		geom.NewLineStringFlat(geom.XY, []float64{0, 2, 10, 20}),
-		//	},
-		//	lineCentroid: geom.Coord{10, 10},
-		//},
+	for _, tc := range []lineDataType{
 		{
+			desc: "Closest to one endpoint",
+			lines: []*geom.LineString{
+				geom.NewLineStringFlat(geom.XY, []float64{0, 0, 10, 10}),
+				geom.NewLineStringFlat(geom.XY, []float64{0, 2, 10, 20}),
+			},
+			lineCentroid: geom.Coord{10, 10},
+		},
+		{
+			desc: "Randomly Generated 1",
 			lines: []*geom.LineString{
 				geom.NewLineStringFlat(geom.XYZ, []float64{
-					-3.255538698546583E7, -2.977815194119198E8, 4.5692369387972426E8, -6.280018242349604E8, -1.392643235913239E9, -4.650933122601589E8, 1.5931401435654209E9, -1.5575080539086862E9, -2.7265664018691385E8, -1.9366642532481414E8, 3.4901412915373886E8, 3.569793799302946E8, -8.89442340086617E8, 6.622865320897722E8, 3.795447087568896E7, -1.1396391834541127E8, 1.0674014671380807E8, 8.493789531752306E8,
+					-2.0476962378424928E9, -1.1237663867526606E8, -4.4174369894724345E8, 1.6153951634676201E9, 1.9928170320125375E7, 6.047217789191747E8, 2.0108606440657005E7, -1.4446186281495008E9, 3.509100203058657E8, -2.0476962378424928E9, -1.1237663867526606E8, -4.4174369894724345E8,
 				}),
 			},
-			lineCentroid: geom.Coord{-1.9366642532481414E8, 3.4901412915373886E8, 3.569793799302946E8},
+			lineCentroid: geom.Coord{2.0108606440657005E7, -1.4446186281495008E9, 3.509100203058657E8},
 		},
-		//{
-		//	lines: []*geom.LineString{
-		//		geom.NewLineStringFlat(geom.XYZ, []float64{
-		//			5.552356914144753E8, 3.6387139342311263E8, -3.9143194775692093E8, -3.0888403279836565E8, 4.427627464828474E7, -7.810361852658501E8, -8.276317164651313E8, -1.3199464283359756E8, -4.868054851890155E8, -1.1617109009380436E9, 5.0025225942494637E8, 3.1208833024127567E8, 7.377798888282046E8, 2.4833153108493188E8, -3.130669061355501E8,
-		//		}),
-		//	},
-		//	lineCentroid: geom.Coord{-3.0888403279836565E8, 4.427627464828474E7, -7.810361852658501E8},
-		//},
-		//{
-		//	lines: []*geom.LineString{
-		//		geom.NewLineStringFlat(geom.XYZ, []float64{
-		//			-7.620593110819522E8, -3.0095766442008936E8, -3.4753931102788186E8, 5.159836074683409E8, -5.457719899807101E8, 2.943053041447715E8, -4.510718685479705E8, -3.463900690378863E8, 6.446051889301107E8, 9.802197104705887E8, -8.20346612533124E8, -5.804408774635209E7, 3.2882873135567363E7, 2.4725304629854366E8, 1.514304983493578E9,
-		//		}),
-		//	},
-		//	lineCentroid: geom.Coord{5.159836074683409E8, -5.457719899807101E8, 2.943053041447715E8},
-		//},
-		//{
-		//	lines: []*geom.LineString{
-		//		geom.NewLineStringFlat(geom.XYZ, []float64{
-		//			2.5574270429352275E8, 1.0034415996516667E8, 1.3446521779463964E9, 1.0936920893308407E8, -5.77724440666997E8, -8.23272045414631E7, 4.193458329448402E8, 1.545751605506269E9, -2.6453558030491945E8, -1.2091331994424954E8, 3.2700789592182535E8, -1.0442086873479776E9, 1.7969786092241028E8, -1.243522333714083E9, -5.188000621422704E7, 4.328233322932299E8, -9.008058210141102E8, 2.422319258406547E8,
-		//		}),
-		//	},
-		//	lineCentroid: geom.Coord{-1.2091331994424954E8, 3.2700789592182535E8, -1.0442086873479776E9},
-		//},
-		//{
-		//	lines: []*geom.LineString{
-		//		geom.NewLineStringFlat(geom.XYZ, []float64{
-		//			-8.366881349012793E8, -5.578828090607738E8, 8380437.80353228, 1.0881866557277836E8, -1.077076548681318E8, 1.1749877530944135E9, 9.039659848224047E7, -1.022195698996295E8, 7.317599309478432E8,
-		//		}),
-		//	},
-		//	lineCentroid: geom.Coord{1.0881866557277836E8, -1.077076548681318E8, 1.1749877530944135E9},
-		//},
+		{
+			desc: "Randomly Generated 2",
+			lines: []*geom.LineString{
+				geom.NewLineStringFlat(geom.XYZ, []float64{
+					-7.46789843875317E8, 1.065439658580128E9, 7.816772072530246E8, 4.080231418111146E8, 1.2013259393533134E9, -1.2156916596965182E9, -1.074743579462955E8, -1.60593803795027E9, -1.8410942424943504E9, -2.0439198291142964E8, -2.0596380989404094E9, -1997897.6567936332, -1.5723919052723333E8, -2.6166424513434714E8, 8.704697990334049E7, -1.696389140551475E9, 4.492291336977326E8, -4.052487033168656E8, 1.1947427435988931E7, -7.092998017420655E8, -1.2269501402370174E8, -7.46789843875317E8, 1.065439658580128E9, 7.816772072530246E8,
+				}),
+			},
+			lineCentroid: geom.Coord{-1.5723919052723333E8, -2.6166424513434714E8, 8.704697990334049E7},
+		},
+		{
+			desc: "Randomly Generated 3",
+			lines: []*geom.LineString{
+				geom.NewLineStringFlat(geom.XYZ, []float64{
+					6.341783697427113E7, -1.0726206418402787E8, -1.0839573118002522E9, 7.602495859103782E8, -5.431471681945347E8, -5.880492197023277E8, 2.628963870764161E8, 4.7620800643484056E8, 7.600627349557235E8, 2.7731211674290743E7, -1.5962198643569078E9, 1.1273405365563903E9, -2.72742709910209E8, 8.401246704749283E8, 8.139560428938211E8, -1.577217923210562E9, 5.0043679987498835E7, -1.5251936131500646E8, -3.746685949111144E7, 1.5160668038148597E8, -4.852577939892976E8, 1.7443933581116918E8, 1.0531243116544546E8, -1.1895546897881567E9, 6.341783697427113E7, -1.0726206418402787E8, -1.0839573118002522E9,
+				}),
+			},
+			lineCentroid: geom.Coord{-3.746685949111144E7, 1.5160668038148597E8, -4.852577939892976E8},
+		},
+		{
+			desc: "Randomly Generated 4",
+			lines: []*geom.LineString{
+				geom.NewLineStringFlat(geom.XYZ, []float64{
+					-3773352.7330737715, -5.342411661592115E7, 5.3125486291572404E8, -3.158050487041971E8, 1.617940676945237E8, 5.657757480926482E7, -3773352.7330737715, -5.342411661592115E7, 5.3125486291572404E8,
+				}),
+			},
+			lineCentroid: geom.Coord{-3.158050487041971E8, 1.617940676945237E8, 5.657757480926482E7},
+		},
+		{
+			desc: "Randomly Generated 5",
+			lines: []*geom.LineString{
+				geom.NewLineStringFlat(geom.XYZ, []float64{
+					-6.955916118828537E8, -7.54771571550343E8, -1.0941742587086952E8, -1.1781096802518074E8, -1.7082976090687165E8, -1.201009454243481E9, 6.354062301153038E8, 2.0204896090364275E9, 1.962046862159836E9, -2.8653780223221374E8, -9.464234534114834E8, -9.911874544497331E8, -6.955916118828537E8, -7.54771571550343E8, -1.0941742587086952E8,
+				}),
+			},
+			lineCentroid: geom.Coord{-1.1781096802518074E8, -1.7082976090687165E8, -1.201009454243481E9},
+		},
 	} {
-		interiorPoint := xy.LinesInteriorPoint(tc.lines[0], tc.lines[1:]...)
+		verifyInteriorPointBasicLines(t, tc)
+		verifyInteriorPointMultiLine(t, tc)
+		verifyInteriorPointLinearRing(t, tc)
+	}
+}
 
-		if !reflect.DeepEqual(interiorPoint, tc.lineCentroid) {
-			t.Errorf("Test %v Failed.  Expected \n\t%v but was\n\t%v", i+1, tc.lineCentroid, interiorPoint)
-		}
+func verifyInteriorPointBasicLines(t *testing.T, tc lineDataType) {
+	interiorPoint := xy.LinesInteriorPoint(tc.lines[0], tc.lines[1:]...)
+
+	if !reflect.DeepEqual(interiorPoint, tc.lineCentroid) {
+		t.Errorf("Test %v Failed.  Expected \n\t%v but was\n\t%v", tc.desc, tc.lineCentroid, interiorPoint)
+	}
+}
+
+func verifyInteriorPointMultiLine(t *testing.T, tc lineDataType) {
+	ends := []int{}
+	coords := []float64{}
+	for _, line := range tc.lines {
+		coords = append(coords, line.FlatCoords()...)
+		ends = append(ends, len(coords))
+	}
+	multiline := geom.NewMultiLineStringFlat(tc.lines[0].Layout(), coords, ends)
+	interiorPoint := xy.MultiLineInteriorPoint(multiline)
+
+	if !reflect.DeepEqual(interiorPoint, tc.lineCentroid) {
+		t.Errorf("Test %v (Multiline) Failed.  Expected \n\t%v but was\n\t%v", tc.desc, tc.lineCentroid, interiorPoint)
+	}
+}
+
+func verifyInteriorPointLinearRing(t *testing.T, tc lineDataType) {
+	rings := []*geom.LinearRing{}
+
+	for _, line := range tc.lines {
+		coords := make([]float64, len(line.FlatCoords()))
+		copy(coords, line.FlatCoords())
+		rings = append(rings, geom.NewLinearRingFlat(line.Layout(), coords))
+	}
+	interiorPoint := xy.LinearRingsInteriorPoint(rings[0], rings[1:]...)
+
+	if !reflect.DeepEqual(interiorPoint, tc.lineCentroid) {
+		t.Errorf("Test %v (LinearRing) Failed.  Expected \n\t%v but was\n\t%v", tc.desc, tc.lineCentroid, interiorPoint)
 	}
 }

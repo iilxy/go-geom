@@ -1,9 +1,9 @@
 package xy
 
 import (
-	"fmt"
-	"github.com/twpayne/go-geom"
 	"math"
+
+	"github.com/twpayne/go-geom"
 )
 
 // LinesInteriorPoint computes the interior point of all the LineStrings provided as arguments.
@@ -13,11 +13,16 @@ import (
 // * If there is no interior vertex, find the endpoint which is closest to the centroid.
 func LinesInteriorPoint(line *geom.LineString, extraLines ...*geom.LineString) (interiorPoint geom.Coord) {
 	centroid := LinesCentroid(line, extraLines...)
-	fmt.Println(centroid)
 	calc := newLineInteriorPointCalc(centroid)
 	calc.addInteriorPoints(line.Layout(), line.FlatCoords())
 	for _, extraLine := range extraLines {
 		calc.addInteriorPoints(extraLine.Layout(), extraLine.FlatCoords())
+	}
+	if len(calc.interiorPoint) == 0 {
+		calc.addEndpoints(line.Layout(), line.FlatCoords())
+		for _, extraLine := range extraLines {
+			calc.addEndpoints(extraLine.Layout(), extraLine.FlatCoords())
+		}
 	}
 	return calc.interiorPoint
 }
@@ -34,6 +39,14 @@ func LinearRingsInteriorPoint(line *geom.LinearRing, extraLines ...*geom.LinearR
 	for _, extraLine := range extraLines {
 		calc.addInteriorPoints(extraLine.Layout(), extraLine.FlatCoords())
 	}
+
+	if len(calc.interiorPoint) == 0 {
+		calc.addEndpoints(line.Layout(), line.FlatCoords())
+		for _, extraLine := range extraLines {
+			calc.addEndpoints(extraLine.Layout(), extraLine.FlatCoords())
+		}
+	}
+
 	return calc.interiorPoint
 }
 
@@ -46,6 +59,13 @@ func MultiLineInteriorPoint(line *geom.MultiLineString) (interiorPoint geom.Coor
 	centroid := MultiLineCentroid(line)
 	calc := newLineInteriorPointCalc(centroid)
 	calc.addInteriorPoints(line.Layout(), line.FlatCoords())
+
+	if len(calc.interiorPoint) == 0 {
+		layout := line.Layout()
+		for i, n := 0, line.NumLineStrings(); i < n; i++ {
+			calc.addEndpoints(layout, line.LineString(i).FlatCoords())
+		}
+	}
 	return calc.interiorPoint
 }
 
@@ -61,30 +81,30 @@ func newLineInteriorPointCalc(centroid geom.Coord) *lineInteriorPointCalc {
 	}
 }
 
-func (calc *lineInteriorPointCalc) addInteriorPoints(layout geom.Layout, coords []float64) (interiorPointWasSet bool) {
+func (calc *lineInteriorPointCalc) addInteriorPoints(layout geom.Layout, coords []float64) {
 	stride := layout.Stride()
-	interiorPointWasSet = false
-	for i := 0; i < len(coords); i += stride {
-		setNow := calc.addCoord(geom.Coord(coords[i : i+stride]))
-		interiorPointWasSet = interiorPointWasSet || setNow
-
+	for i := stride; i < len(coords)-stride; i += stride {
+		calc.addCoord(geom.Coord(coords[i : i+stride]))
 	}
-
-	return interiorPointWasSet
 }
 
-func (calc *lineInteriorPointCalc) addCoord(point geom.Coord) bool {
+func (calc *lineInteriorPointCalc) addCoord(point geom.Coord) {
 	dist := Distance(point, calc.centroid)
 	if dist < calc.minDistance {
-		calc.interiorPoint = make(geom.Coord, len(point))
+
+		switch {
+		case len(calc.interiorPoint) < len(point):
+			calc.interiorPoint = make(geom.Coord, len(point))
+		case len(calc.interiorPoint) > len(point):
+			calc.interiorPoint = calc.interiorPoint[:len(point)]
+		}
+
 		copy(calc.interiorPoint, point)
 		calc.minDistance = dist
-		return true
 	}
+}
 
-	fmt.Println(calc.minDistance, dist)
-	fmt.Println(point, calc.minDistance)
-	fmt.Println()
-
-	return false
+func (calc *lineInteriorPointCalc) addEndpoints(layout geom.Layout, coords []float64) {
+	calc.addCoord(geom.Coord(coords[:layout.Stride()]))
+	calc.addCoord(geom.Coord(coords[len(coords)-layout.Stride():]))
 }
