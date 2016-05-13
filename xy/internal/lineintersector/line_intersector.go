@@ -1,10 +1,34 @@
 package lineintersector
 
 import (
+	"fmt"
 	"github.com/twpayne/go-geom"
 	"github.com/twpayne/go-geom/xy/lineintersection"
 	"math"
 )
+
+// IsOnLine tests whether a point lies on the line segments defined by a list of
+// coordinates.
+//
+// Returns true if the point is a vertex of the line or lies in the interior
+//         of a line segment in the linestring
+func IsOnLine(layout geom.Layout, point geom.Coord, lineSegmentCoordinates []float64) bool {
+	stride := layout.Stride()
+	if len(lineSegmentCoordinates) < (2 * stride) {
+		panic(fmt.Sprintf("At least two coordinates are required in the lineSegmentsCoordinates array in 'algorithms.IsOnLine', was: %v", lineSegmentCoordinates))
+	}
+	strategy := RobustLineIntersector{}
+
+	for i := stride; i < len(lineSegmentCoordinates); i += stride {
+		segmentStart := lineSegmentCoordinates[i-stride : i-stride+2]
+		segmentEnd := lineSegmentCoordinates[i : i+2]
+
+		if PointIntersectsLine(strategy, geom.Coord(point), geom.Coord(segmentStart), geom.Coord(segmentEnd)) {
+			return true
+		}
+	}
+	return false
+}
 
 // Strategy is the line intersection implementation
 type Strategy interface {

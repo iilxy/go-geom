@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/twpayne/go-geom"
 	"github.com/twpayne/go-geom/xy"
+	"github.com/twpayne/go-geom/xy/boundary"
 )
 
 func ExampleOrientationIndex() {
@@ -120,4 +121,23 @@ func ExampleDistance2D() {
 	distance := xy.Distance(geom.Coord(coords[0:2]), geom.Coord(coords[2:4]))
 	fmt.Println(distance)
 	// Output: 20
+}
+
+func ExampleLocatePointOnGeomSFSBoundaryRun() {
+	point := geom.Coord{1, 1}
+	geometry := geom.NewPolygonFlat(geom.XY, []float64{1, 1, 2, 1, 2, 2, 1, 2, 1, 1}, []int{10})
+
+	loc := xy.LocatePointOnGeomSFSBoundaryRun(point, geometry)
+	fmt.Println(loc)
+	// Output: Boundary
+}
+
+func ExampleLocatePointOnGeom() {
+	point := geom.Coord{1, 1}
+	nodeRule := boundary.EndPointBoundaryNodeRule{}
+	geometry := geom.NewPolygonFlat(geom.XY, []float64{1, 1, 2, 1, 2, 2, 1, 2, 1, 1}, []int{10})
+
+	loc := xy.LocatePointOnGeom(nodeRule, point, geometry)
+	fmt.Println(loc)
+	// Output: Boundary
 }
