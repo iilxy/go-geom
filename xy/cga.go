@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"github.com/twpayne/go-geom"
 	"github.com/twpayne/go-geom/bigxy"
+	"github.com/twpayne/go-geom/xy/boundary"
 	"github.com/twpayne/go-geom/xy/internal"
 	"github.com/twpayne/go-geom/xy/internal/lineintersector"
+	"github.com/twpayne/go-geom/xy/internal/pointlocator"
 	"github.com/twpayne/go-geom/xy/internal/raycrossing"
 	"github.com/twpayne/go-geom/xy/location"
 	"github.com/twpayne/go-geom/xy/orientation"
@@ -60,22 +62,7 @@ func LocatePointInRing(layout geom.Layout, p geom.Coord, ring []float64) locatio
 // Returns true if the point is a vertex of the line or lies in the interior
 //         of a line segment in the linestring
 func IsOnLine(layout geom.Layout, point geom.Coord, lineSegmentCoordinates []float64) bool {
-
-	stride := layout.Stride()
-	if len(lineSegmentCoordinates) < (2 * stride) {
-		panic(fmt.Sprintf("At least two coordinates are required in the lineSegmentsCoordinates array in 'algorithms.IsOnLine', was: %v", lineSegmentCoordinates))
-	}
-	strategy := lineintersector.RobustLineIntersector{}
-
-	for i := stride; i < len(lineSegmentCoordinates); i += stride {
-		segmentStart := lineSegmentCoordinates[i-stride : i-stride+2]
-		segmentEnd := lineSegmentCoordinates[i : i+2]
-
-		if lineintersector.PointIntersectsLine(strategy, geom.Coord(point), geom.Coord(segmentStart), geom.Coord(segmentEnd)) {
-			return true
-		}
-	}
-	return false
+	return lineintersector.IsOnLine(layout, point, lineSegmentCoordinates)
 }
 
 // IsRingCounterClockwise computes whether a ring defined by an array of geom.Coords is
@@ -368,4 +355,19 @@ func Equal(coords1 []float64, start1 int, coords2 []float64, start2 int) bool {
 // Distance calculates the 2d distance between the two coordinates
 func Distance(c1, c2 geom.Coord) float64 {
 	return internal.Distance2D(c1, c2)
+}
+
+// LocatePointOnGeom computes the topological relationship ({@link Location}) of a single point
+// to a Geometry.
+// It handles both single-element and multi-element Geometries.
+// The algorithm for multi-part Geometries takes into account the SFS Boundary Determination Rule.
+func LocatePointOnGeomSFSBoundaryRun(point geom.Coord, geometry geom.T) location.Type {
+	return pointlocator.LocatePointOnGeom(boundary.Mod2BoundaryNodeRule{}, point, geometry)
+}
+
+// LocatePointOnGeom computes the topological relationship ({@link Location}) of a single point
+// to a Geometry.
+// It handles both single-element and multi-element Geometries.
+func LocatePointOnGeom(boundaryRule boundary.NodeRule, point geom.Coord, geometry geom.T) location.Type {
+	return pointlocator.LocatePointOnGeom(boundaryRule, point, geometry)
 }
