@@ -35,6 +35,12 @@ func (b *Bounds) Extend(g T) *Bounds {
 	return b
 }
 
+//ExtendWithCoord extends b to include coordinate c
+func (b *Bounds) ExtendWithCoord(c Coord) *Bounds {
+	b.extendFlatCoords(c, 0, b.layout.Stride(), b.layout.Stride())
+	return b
+}
+
 // IsEmpty returns true if b is empty.
 func (b *Bounds) IsEmpty() bool {
 	for i, stride := 0, b.layout.Stride(); i < stride; i++ {

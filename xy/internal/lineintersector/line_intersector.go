@@ -77,7 +77,7 @@ func LineIntersectsLine(strategy Strategy, line1Start, line1End, line2Start, lin
 	case lineintersection.CollinearIntersection:
 		intersections = intersectorData.intersectionPoints[:2]
 	}
-	return lineintersection.NewResult(intersectorData.intersectionType, intersections)
+	return lineintersection.NewResult(intersectorData.intersectionType, intersectorData.isProper, intersections)
 }
 
 // An internal data structure for containing the data during calculations

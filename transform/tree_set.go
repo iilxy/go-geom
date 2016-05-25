@@ -6,33 +6,37 @@ import (
 )
 
 // Compare compares two coordinates for equality and magnitude
-type Compare interface {
+type CoordCompare interface {
 	IsEquals(x, y geom.Coord) bool
 	IsLess(x, y geom.Coord) bool
 }
 
-type tree struct {
-	left  *tree
-	value geom.Coord
-	right *tree
+type compareAdapter struct {
+	compare CoordCompare
+}
+
+func (c compareAdapter) IsEquals(o1, o2 interface{}) bool {
+	return c.compare.IsEquals(o1.(geom.Coord), o2.(geom.Coord))
+}
+func (c compareAdapter) IsLess(o1, o2 interface{}) bool {
+	return c.compare.IsLess(o1.(geom.Coord), o2.(geom.Coord))
 }
 
 // TreeSet sorts the coordinates according to the Compare strategy and removes duplicates as
-// dicated by the Equals function of the Compare strategy
+// dictated by the Equals function of the Compare strategy
 type TreeSet struct {
-	compare Compare
-	tree    *tree
-	size    int
+	treeMap *TreeMap
 	layout  geom.Layout
 	stride  int
 }
 
 // NewTreeSet creates a new TreeSet instance
-func NewTreeSet(layout geom.Layout, compare Compare) *TreeSet {
+func NewTreeSet(layout geom.Layout, compare CoordCompare) *TreeSet {
+	treeMap := NewTreeMap(compareAdapter{compare})
 	return &TreeSet{
 		layout:  layout,
 		stride:  layout.Stride(),
-		compare: compare,
+		treeMap: treeMap,
 	}
 }
 
@@ -47,55 +51,23 @@ func (set *TreeSet) Insert(coord geom.Coord) bool {
 	if len(coord) < set.stride {
 		panic(fmt.Sprintf("Coordinate inserted into tree does not have a sufficient number of points for the provided layout.  Length of Coord was %v but should have been %v", len(coord), set.stride))
 	}
-	tree, added := set.insertImpl(set.tree, coord)
-	if added {
-		set.tree = tree
-		set.size++
-	}
-
-	return added
+	return set.treeMap.Insert(coord, nil)
 }
 
 // ToFlatArray returns an array of floats containing all the coordinates in the TreeSet
 func (set *TreeSet) ToFlatArray() []float64 {
 	stride := set.layout.Stride()
-	array := make([]float64, set.size*stride, set.size*stride)
+	size := set.treeMap.Size()
+	array := make([]float64, size*stride, size*stride)
 
 	i := 0
-	set.walk(set.tree, func(v []float64) {
+	set.treeMap.Walk(func(k, v interface{}) {
+		coord := k.(geom.Coord)
 		for j := 0; j < stride; j++ {
-			array[i+j] = v[j]
+			array[i+j] = coord[j]
 		}
 		i += stride
 	})
 
 	return array
-}
-
-func (set *TreeSet) walk(t *tree, visitor func([]float64)) {
-	if t == nil {
-		return
-	}
-	set.walk(t.left, visitor)
-	visitor(t.value)
-	set.walk(t.right, visitor)
-}
-
-func (set *TreeSet) insertImpl(t *tree, v []float64) (*tree, bool) {
-	if t == nil {
-		return &tree{nil, v, nil}, true
-	}
-
-	if set.compare.IsEquals(geom.Coord(v), geom.Coord(t.value)) {
-		return t, false
-	}
-
-	var added bool
-	if set.compare.IsLess(geom.Coord(v), geom.Coord(t.value)) {
-		t.left, added = set.insertImpl(t.left, v)
-	} else {
-		t.right, added = set.insertImpl(t.right, v)
-	}
-
-	return t, added
 }

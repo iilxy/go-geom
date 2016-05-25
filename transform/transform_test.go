@@ -9,7 +9,7 @@ import (
 func TestUniqueCoords(t *testing.T) {
 	for i, tc := range []struct {
 		pts, expected []float64
-		compare       Compare
+		compare       CoordCompare
 		layout        geom.Layout
 	}{
 		{
