@@ -3,13 +3,13 @@ package xygraph
 import "github.com/twpayne/go-geom"
 
 type MonotoneChainEdge struct {
-	e          Edge
+	e          *Edge
 	pts        []geom.Coord
 	startIndex []int
 	env1, env2 geom.Bounds
 }
 
-func newMonotoneChainEdge(e Edge) *MonotoneChainEdge {
+func newMonotoneChainEdge(e *Edge) *MonotoneChainEdge {
 	return &MonotoneChainEdge{
 		e:          e,
 		pts:        e.pts,

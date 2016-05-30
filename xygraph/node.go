@@ -14,7 +14,7 @@ type Node struct {
 
 var _ GraphComponent = &Node{}
 
-func (n *Node) getCoordinate() geom.Coord {
+func (n *Node) Coordinate() geom.Coord {
 	return n.coord
 }
 
@@ -24,13 +24,17 @@ func (n *Node) getCoordinate() geom.Coord {
 // since if any incident edge is in the result, the node must be in the result as well.
 
 func (n *Node) isIncidentEdgeInResult() bool {
-	for _, e := range n.edges {
-		de := e.(DirectedEdge)
-		if de.getEdge().isInResult() {
-			return true
+	result := false
+	n.edges.Iterate(func(e EdgeEnd) bool {
+		de := e.(*DirectedEdge)
+		if de.Edge().isInResult {
+			result = true
+			return false
 		}
-	}
-	return false
+		return true
+	})
+
+	return result
 }
 
 func (n *Node) isIsolated() bool {
@@ -45,17 +49,17 @@ func (n *Node) computeIM(im IntersectionMatrix) {
 func (n *Node) add(e EdgeEnd) {
 	// Assert: start pt of e is equal to node point
 	n.edges.insert(e)
-	e.setNode(this)
+	e.SetNode(n)
 }
 
-func (n *Node) mergeNodeLabels(n Node) {
-	n.mergeLabel(n.label)
+func (n *Node) mergeNodeLabels(other Node) {
+	n.mergeLabel(other.label)
 }
 
-func (n *Node) mergeLabel(label2 Label) {
+func (n *Node) mergeLabel(label2 *Label) {
 	for i := 0; i < 2; i++ {
 		loc := n.computeMergedLocation(label2, i)
-		thisLoc := n.label.getLocation(i)
+		thisLoc := n.label[i][ON]
 		if thisLoc == location.None {
 			n.label[i] = NewOnTopologyLocation(loc)
 		}
@@ -79,7 +83,7 @@ func (n *Node) setLabelBoundary(argIndex int) {
 	// determine the current location for the point (if any)
 	loc := location.None
 	if n.label != nil {
-		loc = n.label[argIndex]
+		loc = n.label[argIndex][ON]
 	}
 	// flip the loc
 	var newLoc location.Type
@@ -94,11 +98,11 @@ func (n *Node) setLabelBoundary(argIndex int) {
 	n.label[argIndex] = NewOnTopologyLocation(newLoc)
 }
 
-func (n *Node) computeMergedLocation(label2 Label, eltIndex int) {
+func (n *Node) computeMergedLocation(label2 *Label, eltIndex int) location.Type {
 	loc := location.None
-	loc = location.Type(n.label[eltIndex])
+	loc = n.label[eltIndex][ON]
 	if !label2[eltIndex].isNull() {
-		nLoc := location.Type(label2[eltIndex])
+		nLoc := label2[eltIndex][ON]
 		if loc != location.Boundary {
 			loc = nLoc
 		}

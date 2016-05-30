@@ -14,6 +14,6 @@ type GraphComponent interface {
 	isIsolated() bool
 }
 type CommonGraphComponent struct {
-	label                                          Label
+	label                                          *Label
 	isInResult, isCovered, isCoveredSet, isVisited bool
 }

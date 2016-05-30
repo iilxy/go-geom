@@ -18,7 +18,7 @@ func newDepth() depth {
 	}
 }
 
-func (d *depth) location(geomIndex, posIndex int) {
+func (d *depth) location(geomIndex, posIndex int) location.Type {
 	if d[geomIndex][posIndex] <= 0 {
 		return location.Exterior
 	}

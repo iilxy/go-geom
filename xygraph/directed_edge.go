@@ -13,19 +13,21 @@ type DirectedEdge struct {
 	// the next edge in the edge ring for the polygon containing this edge
 	next,
 	// the next edge in the MinimalEdgeRing that contains this edge
-	nextMin DirectedEdge
+	nextMin *DirectedEdge
 	// the EdgeRing that this edge is part of
 	edgeRing,
 	// the MinimalEdgeRing that this edge is part of
-	minEdgeRing EdgeRing
+	minEdgeRing *EdgeRing
 	// The depth of each side (position) of this edge.
 	//  The 0 element of the array is never used.
 	depth [3]int
 }
 
-func NewDirectedEdge(edge Edge, isForward bool) *DirectedEdge {
+var _ EdgeEnd = &DirectedEdge{}
+
+func NewDirectedEdge(edge *Edge, isForward bool) *DirectedEdge {
 	de := &DirectedEdge{
-		EdgeEndCommon{
+		EdgeEndCommon: EdgeEndCommon{
 			edge: edge,
 		},
 		depth:     [3]int{0, -999, -999},
@@ -35,7 +37,7 @@ func NewDirectedEdge(edge Edge, isForward bool) *DirectedEdge {
 		de.init(edge.pts[0], edge.pts[1])
 	} else {
 		n := len(edge.pts) - 1
-		de.init(edge.getCoordinate[n], edge.getCoordinate[n-1])
+		de.init(edge.pts[n], edge.pts[n-1])
 	}
 	de.computeDirectedLabel()
 
@@ -55,16 +57,16 @@ func depthFactor(currLocation, nextLocation location.Type) int {
 	}
 }
 
-func (de *DirectedEdge) setDepth(position, depthVal int) {
-	if de.depth[position] != -999 {
-		if de.depth[position] != depthVal {
+func (de *DirectedEdge) setDepth(pos position, depthVal int) {
+	if de.depth[pos] != -999 {
+		if de.depth[pos] != depthVal {
 			panic(fmt.Sprintf("assigned depths do not match: %v", de.p0))
 		}
 	}
-	de.depth[position] = depthVal
+	de.depth[pos] = depthVal
 }
 
-func (de *DirectedEdge) getDepthDelta() {
+func (de *DirectedEdge) getDepthDelta() int {
 	depthDelta := de.edge.depthDelta
 	if !de.isForward {
 		depthDelta = -depthDelta
@@ -75,8 +77,8 @@ func (de *DirectedEdge) getDepthDelta() {
 // setVisitedEdge marks both DirectedEdges attached to a given Edge.
 // This is used for edges corresponding to lines, which will only appear oriented in a single direction in the result.
 func (de *DirectedEdge) setVisitedEdge(isVisited bool) {
-	de.setVisited(isVisited)
-	de.sym.setVisited(isVisited)
+	de.isVisited = isVisited
+	de.sym.isVisited = isVisited
 }
 
 // isLineEdge determines if this edige is a line edge.  This edge is a line edge if
@@ -96,7 +98,7 @@ func (de *DirectedEdge) isLineEdge() bool {
 func (de *DirectedEdge) isInteriorAreaEdge() bool {
 	isInteriorAreaEdge := true
 	for i := 0; i < 2; i++ {
-		if !(de.label.isArea(i) && de.label[i][LEFT] == location.Interior && de.label[i][RIGHT] == location.Interior) {
+		if !(de.label[i].isArea() && de.label[i][LEFT] == location.Interior && de.label[i][RIGHT] == location.Interior) {
 			isInteriorAreaEdge = false
 		}
 	}
@@ -115,7 +117,7 @@ func (de *DirectedEdge) computeDirectedLabel() {
 // computed depending on the Location transition and the depthDelta of the edge.
 func (de *DirectedEdge) setEdgeDepths(pos position, depth int) {
 	// get the depth transition delta from R to L for this directed Edge
-	depthDelta := de.edge.depthDelta()
+	depthDelta := de.edge.depthDelta
 	if !de.isForward {
 		depthDelta = -depthDelta
 	}

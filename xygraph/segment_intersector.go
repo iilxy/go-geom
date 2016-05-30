@@ -2,7 +2,6 @@ package xygraph
 
 import (
 	"github.com/twpayne/go-geom"
-	"github.com/twpayne/go-geom/bigxy"
 	"github.com/twpayne/go-geom/xy/lineintersection"
 	"math"
 )
@@ -17,7 +16,7 @@ type SegmentIntersector struct {
 	bdyNodes [2][]Node
 }
 
-func (si *SegmentIntersector) isTrivialIntersection(e0 Edge, segIndex0 int, e1 Edge, segIndex1 int) bool {
+func (si *SegmentIntersector) isTrivialIntersection(e0 *Edge, segIndex0 int, e1 *Edge, segIndex1 int) bool {
 	if e0 == e1 {
 		if len(si.lineIntersection.Intersection()) == 1 {
 			if isAdjacentSegments(segIndex0, segIndex1) {
@@ -34,11 +33,11 @@ func (si *SegmentIntersector) isTrivialIntersection(e0 Edge, segIndex0 int, e1 E
 	return false
 }
 
-func isAdjacentSegments(i1, i2 int) int {
-	return math.Abs(i1-i2) == 1
+func isAdjacentSegments(i1, i2 int) bool {
+	return math.Abs(float64(i1-i2)) == 1
 }
 
-func (si *SegmentIntersector) addIntersections(e0 Edge, segIndex0 int, e1 Edge, segIndex1 int) {
+func (si *SegmentIntersector) addIntersections(e0 *Edge, segIndex0 int, e1 *Edge, segIndex1 int) {
 	if e0 == e1 && segIndex0 == segIndex1 {
 		return
 	}
@@ -48,7 +47,7 @@ func (si *SegmentIntersector) addIntersections(e0 Edge, segIndex0 int, e1 Edge, 
 	p10 := e1.pts[segIndex1]
 	p11 := e1.pts[segIndex1+1]
 
-	si.lineIntersection = bigxy.Intersection(p00, p01, p10, p11)
+	si.lineIntersection = xy.(p00, p01, p10, p11)
 
 	//if (li.hasIntersection() && li.isProper()) Debug.println(li);
 	/**
@@ -82,7 +81,7 @@ func (si *SegmentIntersector) addIntersections(e0 Edge, segIndex0 int, e1 Edge, 
 	}
 }
 
-func isBoundaryPoint(li lineintersection.Result, bdyNodes [2][]Node) bool {
+func isBoundaryPoint(li lineintersection.Result, bdyNodes [2][]*Node) bool {
 	if bdyNodes[0] == nil || bdyNodes[1] == nil {
 		return false
 	}
@@ -96,7 +95,7 @@ func isBoundaryPoint(li lineintersection.Result, bdyNodes [2][]Node) bool {
 	return false
 }
 
-func pointIsOnBoundary(li lineintersection.Result, bdyNodes []Node) bool {
+func pointIsOnBoundary(li lineintersection.Result, bdyNodes []*Node) bool {
 	for _, node := range bdyNodes {
 		if li.IsIntersectionPoint(node.coord) {
 			return true

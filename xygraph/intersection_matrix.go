@@ -36,13 +36,22 @@ import (
 type IntersectionMatrix [3][3]dimension
 
 func NewNullIntersectionMatrix() *IntersectionMatrix {
-	return &IntersectionMatrix{[3]dimension{dimFALSE, dimFALSE, dimFALSE}, [3]int{dimFALSE, dimFALSE, dimFALSE}}
+	return &IntersectionMatrix{[3]dimension{dimFALSE, dimFALSE, dimFALSE}, [3]dimension{dimFALSE, dimFALSE, dimFALSE}}
 }
 
 func NewIntersectionMatrixFromTemplate(template IntersectionMatrix) *IntersectionMatrix {
 	im := &IntersectionMatrix{}
-	copy(im[0], template[0])
-	copy(im[1], template[1])
+	im[0][0] = template[0][0]
+	im[0][1] = template[0][1]
+	im[0][2] = template[0][2]
+
+	im[1][0] = template[1][0]
+	im[1][1] = template[1][1]
+	im[1][2] = template[1][2]
+
+	im[2][0] = template[2][0]
+	im[2][1] = template[2][1]
+	im[2][2] = template[2][2]
 	return im
 }
 
@@ -58,7 +67,7 @@ func (im *IntersectionMatrix) add(source IntersectionMatrix) {
 }
 
 // Tests if the dimension value matches dimension_TRUE (i.e.  has value 0, 1, 2 or TRUE).
-func (im *IntersectionMatrix) isTrue(actualDimensionValue dimension) {
+func (im *IntersectionMatrix) isTrue(actualDimensionValue dimension) bool {
 	if actualDimensionValue >= 0 || actualDimensionValue == dimTRUE {
 		return true
 	}
@@ -66,7 +75,7 @@ func (im *IntersectionMatrix) isTrue(actualDimensionValue dimension) {
 }
 
 // Tests if the dimension value satisfies the dimension symbol
-func (im *IntersectionMatrix) matches(actualDimensionValue dimension, requiredDimensionSymbol dimensionalSymbol) {
+func (im *IntersectionMatrix) matches(actualDimensionValue dimension, requiredDimensionSymbol dimensionalSymbol) bool {
 	switch {
 	case requiredDimensionSymbol == SYM_DONTCARE:
 		return true
@@ -97,7 +106,7 @@ func (im *IntersectionMatrix) set(dimensionSymbols string) {
 }
 
 // setAtLeast changes the specified element to minimumDimensionValue if the element is less.
-func (im *IntersectionMatrix) setAtLeast(row, column, minimumDimensionValue int) {
+func (im *IntersectionMatrix) setAtLeast(row, column int, minimumDimensionValue dimension) {
 	if im[row][column] < minimumDimensionValue {
 		im[row][column] = minimumDimensionValue
 	}
@@ -105,7 +114,7 @@ func (im *IntersectionMatrix) setAtLeast(row, column, minimumDimensionValue int)
 
 // setAtLeastIfValid changes the specified element to minimumDimensionValue if the element is less.
 // Does nothing if row < 0 or column < 0.
-func (im *IntersectionMatrix) setAtLeastIfValid(row, column, minimumDimensionValue int) {
+func (im *IntersectionMatrix) setAtLeastIfValid(row, column int, minimumDimensionValue dimension) {
 	if row >= 0 && column >= 0 {
 		im.setAtLeast(row, column, minimumDimensionValue)
 	}
@@ -122,7 +131,7 @@ func (im *IntersectionMatrix) setAtLeastFromSymbols(minimumDimensionSymbols stri
 }
 
 // setAll changes the elements of this IntersectionMatrix to dimensionValue
-func (im *IntersectionMatrix) setAll(dimensionValue int) {
+func (im *IntersectionMatrix) setAll(dimensionValue dimension) {
 	for ai := 0; ai < 3; ai++ {
 		for bi := 0; bi < 3; bi++ {
 			im[ai][bi] = dimensionValue
@@ -139,7 +148,7 @@ func (im *IntersectionMatrix) disjoint() bool {
 }
 
 // touches returns true if this IntersectionMatrix is FT*******, F**T***** or F***T****
-func (im *IntersectionMatrix) touches(dimensionOfGeometryA, dimensionOfGeometryB int) bool {
+func (im *IntersectionMatrix) touches(dimensionOfGeometryA, dimensionOfGeometryB dimension) bool {
 	if dimensionOfGeometryA > dimensionOfGeometryB {
 		//no need to get transpose because pattern matrix is symmetrical
 		return im.touches(dimensionOfGeometryB, dimensionOfGeometryA)
@@ -171,7 +180,7 @@ func (im *IntersectionMatrix) touches(dimensionOfGeometryA, dimensionOfGeometryB
 // The SFS defined this predicate only for P/L, P/A, L/L, and L/A situations.
 // JTS extends the definition to apply to L/P, A/P and A/L situations as well.
 // This makes the relation symmetric.
-func (im *IntersectionMatrix) crosses(dimensionOfGeometryA, dimensionOfGeometryB int) bool {
+func (im *IntersectionMatrix) crosses(dimensionOfGeometryA, dimensionOfGeometryB dimension) bool {
 	if (dimensionOfGeometryA == dimP && dimensionOfGeometryB == dimL) ||
 		(dimensionOfGeometryA == dimP && dimensionOfGeometryB == dimA) ||
 		(dimensionOfGeometryA == dimL && dimensionOfGeometryB == dimA) {
@@ -256,7 +265,7 @@ func (im *IntersectionMatrix) equal(dimensionOfGeometryA, dimensionOfGeometryB i
 // overlaps tests if this IntersectionMatrix is
 // * T*T***T** (for two points or two surfaces)
 // * 1*T***T** (for two curves)
-func (im *IntersectionMatrix) overlaps(dimensionOfGeometryA, dimensionOfGeometryB int) bool {
+func (im *IntersectionMatrix) overlaps(dimensionOfGeometryA, dimensionOfGeometryB dimension) bool {
 	if (dimensionOfGeometryA == dimP && dimensionOfGeometryB == dimP) ||
 		(dimensionOfGeometryA == dimA && dimensionOfGeometryB == dimA) {
 		return im.isTrue(im[location.Interior][location.Interior]) &&
@@ -272,10 +281,10 @@ func (im *IntersectionMatrix) overlaps(dimensionOfGeometryA, dimensionOfGeometry
 }
 
 // matchesSymbol tests whether the elements of this IntersectionMatrix satisfies the required dimension symbols.
-func (im *IntersectionMatrix) matchesSymbols(requiredDimensionSymbols dimensionalSymbol) bool {
+func (im *IntersectionMatrix) matchesSymbols(requiredDimensionSymbols string) bool {
 	for ai := 0; ai < 3; ai++ {
 		for bi := 0; bi < 3; bi++ {
-			if !im.matches(im[ai][bi], requiredDimensionSymbols[3*ai+bi]) {
+			if !im.matches(im[ai][bi], toDimensionSymbol(requiredDimensionSymbols[3*ai+bi])) {
 				return false
 			}
 		}
@@ -292,11 +301,11 @@ func (im *IntersectionMatrix) transpose() *IntersectionMatrix {
 }
 
 // String Returns a nine-character String representation of this IntersectionMatrix
-func (im IntersectionMatrix) String() *IntersectionMatrix {
-	buf := []byte{"123456789"}
+func (im IntersectionMatrix) String() string {
+	buf := []byte("123456789")
 	for ai := 0; ai < 3; ai++ {
 		for bi := 0; bi < 3; bi++ {
-			buf[3*ai+bi] = im[ai][bi].toDimensionSymbol()
+			buf[3*ai+bi] = byte(im[ai][bi].toDimensionSymbol())
 		}
 	}
 	return fmt.Sprintf("%v%v%v%v%v%v%v%v%v", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8])

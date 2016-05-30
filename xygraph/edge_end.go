@@ -12,21 +12,22 @@ import (
 type EdgeEnd interface {
 	compareDirection(other *EdgeEndCommon) int
 	computeLabel(boundaryNodeRule boundary.NodeRule)
-	Label() Label
-	Edge() Edge
+	Label() *Label
+	Edge() *Edge
+	SetNode(node *Node)
 	Coordinate() geom.Coord
 }
 
 type EdgeEndCommon struct {
 	edge     *Edge
-	label    Label
-	node     Node
+	label    *Label
+	node     *Node
 	p0, p1   geom.Coord
 	dx, dy   float64
 	quadrant Quadrant
 }
 
-var _ EdgeEnd = EdgeEndStarCommon{}
+var _ EdgeEnd = &EdgeEndCommon{}
 
 func (e *EdgeEndCommon) init(p0, p1 geom.Coord) {
 	e.p0 = p0
@@ -39,11 +40,15 @@ func (e *EdgeEndCommon) init(p0, p1 geom.Coord) {
 	}
 }
 
-func (e *EdgeEndCommon) Label() Label {
+func (e *EdgeEndCommon) Label() *Label {
 	return e.label
 }
 
-func (e *EdgeEndCommon) Edge() Edge {
+func (e *EdgeEndCommon) SetNode(node *Node) {
+	e.node = node
+}
+
+func (e *EdgeEndCommon) Edge() *Edge {
 	return e.edge
 }
 
@@ -65,7 +70,7 @@ func (e *EdgeEndCommon) compareDirection(other *EdgeEndCommon) int {
 	}
 	// vectors are in the same quadrant - check relative orientation of direction vectors
 	// this is > e if it is CCW of e
-	return xy.OrientationIndex(other.p0, other.p1, e.p1)
+	return int(xy.OrientationIndex(other.p0, other.p1, e.p1))
 }
 
 func (e *EdgeEndCommon) computeLabel(boundaryNodeRule boundary.NodeRule) {

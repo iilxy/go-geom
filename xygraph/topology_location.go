@@ -14,11 +14,11 @@ func NewTopologyLocationFromTemplate(template TopologyLocation) TopologyLocation
 }
 
 func NewOnTopologyLocation(on location.Type) TopologyLocation {
-	return &TopologyLocation{on}
+	return TopologyLocation{on}
 }
 
 func NewTopologyLocation(on, left, right location.Type) TopologyLocation {
-	return &TopologyLocation{on, left, right}
+	return TopologyLocation{on, left, right}
 }
 
 func (topoLoc TopologyLocation) isNull() bool {
@@ -35,15 +35,15 @@ func (topoLoc TopologyLocation) isEqualOnSide(le TopologyLocation, locIndex int)
 	return topoLoc[locIndex] == le[locIndex]
 }
 
-func (topoLoc TopologyLocation) isArea() {
+func (topoLoc TopologyLocation) isArea() bool {
 	return len(topoLoc) > 1
 }
 
-func (topoLoc TopologyLocation) isLine() {
+func (topoLoc TopologyLocation) isLine() bool {
 	return len(topoLoc) == 1
 }
 
-func (topoLoc TopologyLocation) flip() {
+func (topoLoc *TopologyLocation) flip() {
 	if len(topoLoc) <= 1 {
 		return
 	}
@@ -52,20 +52,20 @@ func (topoLoc TopologyLocation) flip() {
 	topoLoc[RIGHT] = temp
 }
 
-func (topoLoc TopologyLocation) setAllLocations(locValue int) {
+func (topoLoc *TopologyLocation) setAllLocations(locValue location.Type) {
 	for i := 0; i < len(topoLoc); i++ {
 		topoLoc[i] = locValue
 	}
 }
 
-func (topoLoc TopologyLocation) setAllLocationsIfNull(locValue int) {
+func (topoLoc *TopologyLocation) setAllLocationsIfNull(locValue location.Type) {
 	for i := 0; i < len(topoLoc); i++ {
 		if topoLoc[i] == location.None {
 			topoLoc[i] = locValue
 		}
 	}
 }
-func (topoLoc TopologyLocation) allPositionsEqual(loc location.Type) {
+func (topoLoc *TopologyLocation) allPositionsEqual(loc location.Type) bool {
 	for _, l := range topoLoc {
 		if l != loc {
 			return false
@@ -73,7 +73,7 @@ func (topoLoc TopologyLocation) allPositionsEqual(loc location.Type) {
 	}
 	return true
 }
-func (topoLoc TopologyLocation) merge(gl TopologyLocation) TopologyLocation {
+func (topoLoc *TopologyLocation) merge(gl TopologyLocation) TopologyLocation {
 	// if the src is an Area label & and the dest is not, increase the dest to be an Area
 	if len(gl) > len(topoLoc) {
 		newLoc := make([]int, 3)

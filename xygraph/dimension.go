@@ -34,7 +34,15 @@ const (
 	SYM_A        dimensionalSymbol = '2'
 )
 
-func (d dimension) toDimensionSymbol() rune {
+func toDimensionSymbol(sym byte) dimensionalSymbol {
+	if sym == byte(SYM_FALSE) || sym == byte(SYM_TRUE) || sym == byte(SYM_DONTCARE) ||
+		sym == byte(SYM_P) || sym == byte(SYM_L) || sym == byte(SYM_A) {
+		return dimensionalSymbol(sym)
+	}
+
+	panic(fmt.Sprintf("The dimension %v is not a valid dimension", sym))
+}
+func (d dimension) toDimensionSymbol() dimensionalSymbol {
 	switch d {
 	case dimFALSE:
 		return SYM_FALSE

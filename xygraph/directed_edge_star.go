@@ -2,6 +2,7 @@ package xygraph
 
 import (
 	"fmt"
+	"github.com/twpayne/go-geom/transform"
 	"github.com/twpayne/go-geom/xy/location"
 )
 
@@ -12,13 +13,18 @@ const (
 
 type DirectedEdgeStar struct {
 	EdgeEndStarCommon
-	resultAreaEdgeList []DirectedEdge
-	label              Label
+	resultAreaEdgeList []*DirectedEdge
+	label              *Label
 }
+
+var _ EdgeEndStar = &DirectedEdgeStar{}
 
 func NewDirectedEdgeStart(edgeList []EdgeEnd) *DirectedEdgeStar {
 	star := &DirectedEdgeStar{
-		NewEdgeEndStarCommon(edgeList),
+		EdgeEndStarCommon: EdgeEndStarCommon{
+			ptInAreaLocation: [2]location.Type{location.None, location.None},
+			edgeMap:          transform.NewTreeMap(EdgeEndCompare{}),
+		},
 		resultAreaEdgeList: nil,
 	}
 
@@ -29,26 +35,26 @@ func NewDirectedEdgeStart(edgeList []EdgeEnd) *DirectedEdgeStar {
 }
 
 func (des *DirectedEdgeStar) insert(ee EdgeEnd) {
-	de := ee.(DirectedEdge)
+	de := ee.(*DirectedEdge)
 	des.insertEdgeEnd(de, de)
 }
 
 func (des *DirectedEdgeStar) getOutgoingDegreeInResult() int {
-	return des.getOutgoingDegree(func(de DirectedEdge) {
+	return des.getOutgoingDegree(func(de *DirectedEdge) bool {
 		return de.isInResult
 	})
 }
 
-func (des *DirectedEdgeStar) getOutgoingDegreeInRing(er EdgeRing) int {
-	return des.getOutgoingDegree(func(de DirectedEdge) {
+func (des *DirectedEdgeStar) getOutgoingDegreeInRing(er *EdgeRing) int {
+	return des.getOutgoingDegree(func(de *DirectedEdge) bool {
 		return de.edgeRing == er
 	})
 }
 
-func (des *DirectedEdgeStar) getOutgoingDegree(cmp func(DirectedEdge) bool) int {
+func (des *DirectedEdgeStar) getOutgoingDegree(cmp func(*DirectedEdge) bool) int {
 	degree := 0
 	des.edgeMap.Walk(func(key, e interface{}) {
-		de := e.(DirectedEdge)
+		de := e.(*DirectedEdge)
 		if cmp(de) {
 			degree++
 		}
@@ -57,17 +63,26 @@ func (des *DirectedEdgeStar) getOutgoingDegree(cmp func(DirectedEdge) bool) int 
 	return degree
 }
 
-func (des *DirectedEdgeStar) getRightmostEdge() DirectedEdge {
-	edges := des.edgeList
-	size := len(edges)
+func (des *DirectedEdgeStar) getRightmostEdge() *DirectedEdge {
+	size := des.edgeMap.Size()
 	if size < 1 {
 		return nil
 	}
-	de0 := edges[0].(DirectedEdge)
+	var de0, deLast *DirectedEdge
+	i := 0
+	des.edgeMap.WalkInterruptible(func(key, value interface{}) bool {
+		if i == 0 {
+			de0 = value.(*DirectedEdge)
+			if size == 1 {
+				return false
+			}
+		}
+		deLast = value.(*DirectedEdge)
+		return true
+	})
 	if size == 1 {
 		return de0
 	}
-	deLast := edges[size-1].(DirectedEdge)
 
 	quad0 := de0.quadrant
 	quad1 := deLast.quadrant
@@ -94,16 +109,16 @@ func (des *DirectedEdgeStar) computeLabelling(geom []GeometryGraph) {
 
 	// determine the overall labelling for this DirectedEdgeStar
 	// (i.e. for the node it is based at)
-	des.label = NewLabel(location.None)
+	des.label = NewHomogeneousLabel(location.None)
 
 	des.edgeMap.Walk(func(key, value interface{}) {
 		ee := value.(DirectedEdge)
 		e := ee.edge
 		eLabel := e.label
 		for i := 0; i < 2; i++ {
-			eLoc := eLabel[i]
+			eLoc := eLabel[i][ON]
 			if eLoc == location.Interior || eLoc == location.Boundary {
-				des.label[i] = location.Interior
+				des.label[i][ON] = location.Interior
 			}
 		}
 	})
@@ -121,24 +136,24 @@ func (des *DirectedEdgeStar) mergeSymLabels() {
 }
 
 // updateLabelling updates incomplete dirEdge labels from the labelling for the node
-func (des *DirectedEdgeStar) updateLabelling(nodeLabel Label) {
+func (des *DirectedEdgeStar) updateLabelling(nodeLabel *Label) {
 	des.edgeMap.Walk(func(key, ee interface{}) {
 		de := ee.(DirectedEdge)
 		label := de.label
-		label[0].setAllLocationsIfNull(nodeLabel[0])
-		label[0].setAllLocationsIfNull(nodeLabel[1])
+		label[0].setAllLocationsIfNull(nodeLabel[0][ON])
+		label[0].setAllLocationsIfNull(nodeLabel[1][ON])
 	})
 }
 
-func (des *DirectedEdgeStar) getResultAreaEdges() []DirectedEdge {
+func (des *DirectedEdgeStar) getResultAreaEdges() []*DirectedEdge {
 	if des.resultAreaEdgeList != nil {
 		return des.resultAreaEdgeList
 	}
-	des.resultAreaEdgeList = []DirectedEdge{}
+	des.resultAreaEdgeList = []*DirectedEdge{}
 
 	des.edgeMap.Walk(func(key, ee interface{}) {
-		de := ee.(DirectedEdge)
-		if de.isInResult() || de.sym.isInResult {
+		de := ee.(*DirectedEdge)
+		if de.isInResult || de.sym.isInResult {
 			des.resultAreaEdgeList = append(des.resultAreaEdgeList, de)
 		}
 	})
@@ -163,7 +178,7 @@ func (des *DirectedEdgeStar) linkResultDirectedEdges() error {
 	// make sure edges are copied to resultAreaEdges list
 	des.getResultAreaEdges()
 	// find first area edge (if any) to start linking at
-	var firstOut, incoming DirectedEdge = nil, nil
+	var firstOut, incoming *DirectedEdge = nil, nil
 	state := SCANNING_FOR_INCOMING
 	// link edges in CCW order
 	for i := 0; i < len(des.resultAreaEdgeList); i++ {
@@ -209,11 +224,11 @@ func (des *DirectedEdgeStar) linkResultDirectedEdges() error {
 	return nil
 }
 
-func (des *DirectedEdgeStar) linkMinimalDirectedEdges(er EdgeRing) error {
+func (des *DirectedEdgeStar) linkMinimalDirectedEdges(er *EdgeRing) error {
 
 	des.getResultAreaEdges()
 	// find first area edge (if any) to start linking at
-	var firstOut, incoming DirectedEdge = nil, nil
+	var firstOut, incoming *DirectedEdge = nil, nil
 
 	state := SCANNING_FOR_INCOMING
 	// link edges in CW order
@@ -256,11 +271,11 @@ func (des *DirectedEdgeStar) linkMinimalDirectedEdges(er EdgeRing) error {
 
 func (des *DirectedEdgeStar) linkAllDirectedEdges() {
 	// find first area edge (if any) to start linking at
-	var prevOut, firstIn DirectedEdge = nil, nil
+	var prevOut, firstIn *DirectedEdge = nil, nil
 
 	// link edges in CW order
-	for i := 0; i < len(des.edgeList); i++ {
-		nextOut := des.edgeList[i].(DirectedEdge)
+	des.edgeMap.Walk(func(key, value interface{}) {
+		nextOut := value.(*DirectedEdge)
 		nextIn := nextOut.sym
 
 		if firstIn == nil {
@@ -271,7 +286,8 @@ func (des *DirectedEdgeStar) linkAllDirectedEdges() {
 		}
 		// record outgoing edge, in order to link the last incoming edge
 		prevOut = nextOut
-	}
+	})
+
 	firstIn.next = prevOut
 }
 
@@ -294,7 +310,7 @@ func (des *DirectedEdgeStar) findCoveredLineEdges() {
 		nextOut := value.(DirectedEdge)
 		nextIn := nextOut.sym
 		if !nextOut.isLineEdge() {
-			if nextOut.isInResult() {
+			if nextOut.isInResult {
 				startLoc = location.Interior
 				return false
 			}
@@ -322,21 +338,21 @@ func (des *DirectedEdgeStar) findCoveredLineEdges() {
 			nextOut.edge.isCovered = currLoc == location.Interior
 		} else {
 			// edge is an Area edge
-			if nextOut.isInResult() {
+			if nextOut.isInResult {
 				currLoc = location.Exterior
 			}
-			if nextIn.isInResult() {
+			if nextIn.isInResult {
 				currLoc = location.Interior
 			}
 		}
 	})
 }
-func (des *DirectedEdgeStar) computeDepths(de DirectedEdge) {
+func (des *DirectedEdgeStar) computeDepths(de *DirectedEdge) error {
 	edgeIndex := des.findIndex(de)
 	startDepth := de.depth[LEFT]
 	targetLastDepth := de.depth[RIGHT]
 	// compute the depths from this edge up to the end of the edge array
-	nextDepth := des.computeDepthsForEdges(edgeIndex+1, len(des.edgeList), startDepth)
+	nextDepth := des.computeDepthsForEdges(edgeIndex+1, des.edgeMap.Size(), startDepth)
 	// compute the depths for the initial part of the array
 	lastDepth := des.computeDepthsForEdges(0, edgeIndex, nextDepth)
 	//Debug.print(lastDepth != targetLastDepth, this);
@@ -344,15 +360,19 @@ func (des *DirectedEdgeStar) computeDepths(de DirectedEdge) {
 	if lastDepth != targetLastDepth {
 		return fmt.Errorf("depth mismatch at %v", de.Coordinate())
 	}
+
+	return nil
 }
 
 // computeDepths calculates the DirectedEdge depths for a subsequence of the edge array.
 func (des *DirectedEdgeStar) computeDepthsForEdges(startIndex, endIndex, startDepth int) int {
 	currDepth := startDepth
-	for i := startIndex; i < endIndex; i++ {
-		nextDe := des.edgeList[i].(DirectedEdge)
+
+	des.edgeMap.Walk(func(key, value interface{}) {
+		nextDe := value.(DirectedEdge)
 		nextDe.setEdgeDepths(RIGHT, currDepth)
 		currDepth = nextDe.depth[LEFT]
-	}
+	})
+
 	return currDepth
 }

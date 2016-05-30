@@ -10,43 +10,42 @@ import (
 
 type Edge struct {
 	CommonGraphComponent
-	pts        []geom.Coord
-	env        geom.Bounds
-	eiList     edgeIntersectionList
-	name       string
-	mce        MonotoneChainEdge
-	isIsolated bool
-	depth      depth
+	pts      []geom.Coord
+	env      *geom.Bounds
+	eiList   edgeIntersectionList
+	name     string
+	mce      *MonotoneChainEdge
+	isolated bool
+	depth    depth
 	// depthDelta is the change in depth as an edge is crossed from R to L
 	depthDelta int
 }
 
 var _ GraphComponent = &Edge{}
 
-func NewEdge(pts []geom.Coord, label Label) *Edge {
+func NewEdge(pts []geom.Coord, label *Label) *Edge {
 	return &Edge{
-		CommonGraphComponent{
+		CommonGraphComponent: CommonGraphComponent{
 			label: label,
 		},
-		pts:        pts,
-		isIsolated: true,
-		depth:      newDepth(),
-		env:        nil,
+		pts:      pts,
+		isolated: true,
+		depth:    newDepth(),
 	}
 }
 
-func (e *Edge) Envelope() {
+func (e *Edge) Envelope() *geom.Bounds {
 	// compute envelope lazily
 	if e.env == nil {
 		e.env = geom.NewBounds(geom.XY)
 		for _, c := range e.pts {
-			e.env.Extend(c)
+			e.env.ExtendWithCoord(c)
 		}
 	}
 	return e.env
 }
 
-func (e *Edge) MonotoneChainEdge() {
+func (e *Edge) MonotoneChainEdge() *MonotoneChainEdge {
 	if e.mce == nil {
 		e.mce = newMonotoneChainEdge(e)
 	}
@@ -54,13 +53,13 @@ func (e *Edge) MonotoneChainEdge() {
 	return e.mce
 }
 
-func (e *Edge) isClosed() {
-	return xy.Equal(e.pts[0], 0, e.pts[len(e.pts-1)], 0)
+func (e *Edge) isClosed() bool {
+	return xy.Equal(e.pts[0], 0, e.pts[len(e.pts)-1], 0)
 }
 
 // isCollapsed returns true if the edge is an Area edge and it consists of two
 // segments which are equal and opposite (eg a zero-width V).
-func (e *Edge) isCollapsed() {
+func (e *Edge) isCollapsed() bool {
 	if !e.label.isArea() {
 		return false
 	}
@@ -73,15 +72,18 @@ func (e *Edge) isCollapsed() {
 	return false
 }
 
-func (e *Edge) getCoordinate() geom.Coord {
+func (e *Edge) Coordinate() geom.Coord {
 	if len(e.pts) > 0 {
 		return e.pts[0]
 	}
 	return nil
 }
-func (e *Edge) collapsedEdge() {
+func (e *Edge) isIsolated() bool {
+	return e.isolated
+}
+func (e *Edge) collapsedEdge() *Edge {
 	newPts := [2]geom.Coord{e.pts[0], e.pts[1]}
-	return NewEdge(newPts, e.label.toLineLabel())
+	return NewEdge(newPts[:], e.label.toLineLabel())
 }
 
 // Adds EdgeIntersections for one or both
@@ -89,7 +91,7 @@ func (e *Edge) collapsedEdge() {
 func (e *Edge) addIntersections(li lineintersection.Result, segmentIndex, geomIndex int) {
 	intersections := li.Intersection()
 	for i := 0; i < len(intersections); i++ {
-		e.addIntersection(li[i], segmentIndex, geomIndex)
+		e.addIntersection(intersections[i], segmentIndex, geomIndex)
 	}
 }
 
@@ -120,11 +122,11 @@ func (e *Edge) computeIM(im IntersectionMatrix) {
 	updateIM(e.label, im)
 }
 
-func updateIM(label Label, im IntersectionMatrix) {
-	im.setAtLeastIfValid(label[0][ON], label[1][ON], 1)
+func updateIM(label *Label, im IntersectionMatrix) {
+	im.setAtLeastIfValid(int(label[0][ON]), int(label[1][ON]), 1)
 	if label.isArea() {
-		im.setAtLeastIfValid(label[0][LEFT], label[1][LEFT], 2)
-		im.setAtLeastIfValid(label[0][RIGHT], label[1][RIGHT], 2)
+		im.setAtLeastIfValid(int(label[0][LEFT]), int(label[1][LEFT]), 2)
+		im.setAtLeastIfValid(int(label[0][RIGHT]), int(label[1][RIGHT]), 2)
 	}
 
 }
@@ -185,8 +187,7 @@ func (e *Edge) StringReverse() string {
 	buf := bytes.Buffer{}
 	buf.WriteString(fmt.Sprintf("edge %v: ", e.name))
 	for i := len(e.pts) - 1; i >= 0; i-- {
-		buf.WriteString(e.pts[i] + " ")
-		buf.WriteString(" ")
+		buf.WriteString(fmt.Sprintf("%v ", e.pts[i]))
 	}
 	buf.WriteString("\n")
 	return buf.String()

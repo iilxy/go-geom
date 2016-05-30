@@ -8,24 +8,24 @@ import (
 )
 
 type EdgeRingStrategy interface {
-	getNext(dEdge DirectedEdge) DirectedEdge
-	setEdgeRing(dEdge DirectedEdge, edgeRing EdgeRing)
+	getNext(dEdge *DirectedEdge) *DirectedEdge
+	setEdgeRing(dEdge *DirectedEdge, edgeRing *EdgeRing)
 }
 
 type EdgeRing struct {
 	strategy      EdgeRingStrategy
 	layout        geom.Layout
-	startDe       DirectedEdge
+	startDe       *DirectedEdge
 	maxNodeDegree int
-	edges         []Edge
+	edges         []*DirectedEdge
 	pts           []geom.Coord
-	label         Label
-	ring          geom.LinearRing
-	shell         EdgeRing
-	holes         []EdgeRing
+	label         *Label
+	ring          *geom.LinearRing
+	shell         *EdgeRing
+	holes         []*EdgeRing
 }
 
-func NewEdgeRingCommon(layout geom.Layout, start DirectedEdge) *EdgeRing {
+func NewEdgeRingCommon(layout geom.Layout, start *DirectedEdge) *EdgeRing {
 	EdgeRingCommon := &EdgeRing{
 		layout:        layout,
 		maxNodeDegree: -1,
@@ -37,41 +37,41 @@ func NewEdgeRingCommon(layout geom.Layout, start DirectedEdge) *EdgeRing {
 	return EdgeRingCommon
 }
 
-func (er *EdgeRing) getNext(dEdge DirectedEdge) DirectedEdge {
+func (er *EdgeRing) getNext(dEdge *DirectedEdge) *DirectedEdge {
 	return er.strategy.getNext(dEdge)
 }
-func (er *EdgeRing) setEdgeRing(dEdge DirectedEdge, edgeRing EdgeRing) {
-	return er.strategy.setEdgeRing(dEdge, edgeRing)
+func (er *EdgeRing) setEdgeRing(dEdge *DirectedEdge, edgeRing *EdgeRing) {
+	er.strategy.setEdgeRing(dEdge, edgeRing)
 }
 
 func (er *EdgeRing) isIsolated() bool {
-	return (er.label.getGeometryCount() == 1)
+	return er.label.getGeometryCount() == 1
 }
 
 func (er *EdgeRing) isHole() bool {
 	return er.shell != nil
 }
 
-func (er *EdgeRing) setShell(shell EdgeRing) {
+func (er *EdgeRing) setShell(shell *EdgeRing) {
 	er.shell = shell
 	shell.holes = append(shell.holes, er)
 }
 
-func (er *EdgeRing) toPolygon() geom.Polygon {
+func (er *EdgeRing) toPolygon() *geom.Polygon {
 	ends := make([]int, 1+len(er.holes), 0)
 	shellLen := len(er.ring.FlatCoords())
 	ends = append(ends, shellLen)
 	numOrds := shellLen
-	for i := 0; i < shellLen(er.holes); i++ {
-		ringLen := shellLen(er.holes[i].ring.FlatCoords())
+	for i := 0; i < len(er.holes); i++ {
+		ringLen := len(er.holes[i].ring.FlatCoords())
 		numOrds += ringLen
 		ends = append(ends, ringLen)
 	}
 
 	holeData := make([]float64, numOrds, 0)
-	holeData = append(holeData, er.ring.FlatCoords())
-	for i := 0; i < shellLen(er.holes); i++ {
-		holeData = append(holeData, er.holes[i].ring.FlatCoords())
+	holeData = append(holeData, er.ring.FlatCoords()...)
+	for i := 0; i < len(er.holes); i++ {
+		holeData = append(holeData, er.holes[i].ring.FlatCoords()...)
 	}
 	return geom.NewPolygonFlat(er.shell.ring.Layout(), holeData, ends)
 }
@@ -83,15 +83,14 @@ func (er *EdgeRing) computeRing() {
 	if er.ring != nil {
 		return
 	} // don't compute more than once
-	coord := make([]float64, len(er.pts*er.layout.Stride()), 0)
+	coord := make([]float64, len(er.pts)*er.layout.Stride(), 0)
 	for i := 0; i < len(er.pts); i++ {
-		coord = append(coord, er.pts[i])
+		coord = append(coord, er.pts[i]...)
 	}
 	er.ring = geom.NewLinearRingFlat(er.layout, coord)
-	er.isHole = xy.IsRingCounterClockwise(er.layout, coord)
 }
 
-func (er *EdgeRing) computePoints(start DirectedEdge) error {
+func (er *EdgeRing) computePoints(start *DirectedEdge) error {
 	//System.out.println("buildRing");
 	startDe := start
 	de := start
@@ -113,7 +112,7 @@ func (er *EdgeRing) computePoints(start DirectedEdge) error {
 			return fmt.Errorf("Expected label to be area label")
 		}
 		er.fullLabelMerge(label)
-		er.addPoints(de.edge, de.isForward(), isFirstEdge)
+		er.addPoints(de.edge, de.isForward, isFirstEdge)
 		isFirstEdge = false
 		er.setEdgeRing(de, er)
 		de = er.getNext(de)
@@ -121,6 +120,7 @@ func (er *EdgeRing) computePoints(start DirectedEdge) error {
 			break
 		}
 	}
+	return nil
 }
 
 func (er *EdgeRing) getMaxNodeDegree() int {
@@ -135,7 +135,7 @@ func (er *EdgeRing) computeMaxNodeDegree() {
 	de := er.startDe
 	for {
 		node := de.node
-		degree := node.edges.(DirectedEdgeStar).getOutgoingDegree(er)
+		degree := node.edges.(*DirectedEdgeStar).getOutgoingDegreeInRing(er)
 		if degree > er.maxNodeDegree {
 			er.maxNodeDegree = degree
 		}
@@ -158,7 +158,7 @@ func (er *EdgeRing) setInResult() {
 	}
 }
 
-func (er *EdgeRing) fullLabelMerge(deLabel Label) {
+func (er *EdgeRing) fullLabelMerge(deLabel *Label) {
 	er.mergeLabel(deLabel, 0)
 	er.mergeLabel(deLabel, 1)
 }
@@ -168,20 +168,20 @@ func (er *EdgeRing) fullLabelMerge(deLabel Label) {
 // from a node which is NOT an intersection node between the Geometries
 // (e.g. the end node of a LinearRing).  In this case the DirectedEdge label
 // does not contribute any information to the overall labelling, and is simply skipped.
-func (er *EdgeRing) mergeLabel(deLabel Label, geomIndex int) {
+func (er *EdgeRing) mergeLabel(deLabel *Label, geomIndex int) {
 	loc := deLabel[geomIndex][RIGHT]
 	// no information to be had from this label
 	if loc == location.None {
 		return
 	}
 	// if there is no current RHS value, set it
-	if er.label[geomIndex] == location.None {
-		er.label[geomIndex] = loc
+	if er.label[geomIndex][ON] == location.None {
+		er.label[geomIndex][ON] = loc
 		return
 	}
 }
 
-func (er *EdgeRing) addPoints(edge Edge, isForward, isFirstEdge bool) {
+func (er *EdgeRing) addPoints(edge *Edge, isForward, isFirstEdge bool) {
 	edgePts := edge.pts
 	if isForward {
 		startIndex := 1
