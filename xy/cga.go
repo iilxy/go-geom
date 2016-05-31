@@ -11,6 +11,7 @@ import (
 	"github.com/twpayne/go-geom/xy/internal/lineintersector"
 	"github.com/twpayne/go-geom/xy/internal/pointlocator"
 	"github.com/twpayne/go-geom/xy/internal/raycrossing"
+	"github.com/twpayne/go-geom/xy/lineintersection"
 	"github.com/twpayne/go-geom/xy/location"
 	"github.com/twpayne/go-geom/xy/orientation"
 	"math"
@@ -63,6 +64,11 @@ func LocatePointInRing(layout geom.Layout, p geom.Coord, ring []float64) locatio
 //         of a line segment in the linestring
 func IsOnLine(layout geom.Layout, point geom.Coord, lineSegmentCoordinates []float64) bool {
 	return lineintersector.IsOnLine(layout, point, lineSegmentCoordinates)
+}
+
+// LinesIntersection determines the intersection between two lines.
+func LinesIntersection(line1Start, line1End, line2Start, line2End geom.Coord) lineintersection.Result {
+	return lineintersector.LineIntersectsLine(lineintersector.RobustLineIntersector{}, line1Start, line1End, line2Start, line2End)
 }
 
 // IsRingCounterClockwise computes whether a ring defined by an array of geom.Coords is

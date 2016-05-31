@@ -43,7 +43,7 @@ func (topoLoc TopologyLocation) isLine() bool {
 	return len(topoLoc) == 1
 }
 
-func (topoLoc *TopologyLocation) flip() {
+func (topoLoc TopologyLocation) flip() {
 	if len(topoLoc) <= 1 {
 		return
 	}
@@ -52,20 +52,20 @@ func (topoLoc *TopologyLocation) flip() {
 	topoLoc[RIGHT] = temp
 }
 
-func (topoLoc *TopologyLocation) setAllLocations(locValue location.Type) {
+func (topoLoc TopologyLocation) setAllLocations(locValue location.Type) {
 	for i := 0; i < len(topoLoc); i++ {
 		topoLoc[i] = locValue
 	}
 }
 
-func (topoLoc *TopologyLocation) setAllLocationsIfNull(locValue location.Type) {
+func (topoLoc TopologyLocation) setAllLocationsIfNull(locValue location.Type) {
 	for i := 0; i < len(topoLoc); i++ {
 		if topoLoc[i] == location.None {
 			topoLoc[i] = locValue
 		}
 	}
 }
-func (topoLoc *TopologyLocation) allPositionsEqual(loc location.Type) bool {
+func (topoLoc TopologyLocation) allPositionsEqual(loc location.Type) bool {
 	for _, l := range topoLoc {
 		if l != loc {
 			return false
@@ -73,10 +73,10 @@ func (topoLoc *TopologyLocation) allPositionsEqual(loc location.Type) bool {
 	}
 	return true
 }
-func (topoLoc *TopologyLocation) merge(gl TopologyLocation) TopologyLocation {
+func (topoLoc TopologyLocation) merge(gl TopologyLocation) TopologyLocation {
 	// if the src is an Area label & and the dest is not, increase the dest to be an Area
 	if len(gl) > len(topoLoc) {
-		newLoc := make([]int, 3)
+		newLoc := make([]location.Type, 3)
 		newLoc[ON] = topoLoc[ON]
 		newLoc[LEFT] = location.None
 		newLoc[RIGHT] = location.None

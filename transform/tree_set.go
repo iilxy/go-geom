@@ -15,6 +15,8 @@ type compareAdapter struct {
 	compare CoordCompare
 }
 
+var _ Compare = compareAdapter{}
+
 func (c compareAdapter) IsEquals(o1, o2 interface{}) bool {
 	return c.compare.IsEquals(o1.(geom.Coord), o2.(geom.Coord))
 }

@@ -2,6 +2,7 @@ package xygraph
 
 import (
 	"github.com/twpayne/go-geom"
+	"github.com/twpayne/go-geom/xy"
 	"github.com/twpayne/go-geom/xy/lineintersection"
 	"math"
 )
@@ -13,7 +14,7 @@ type SegmentIntersector struct {
 	lineIntersection        lineintersection.Result
 
 	// Boundary nodes
-	bdyNodes [2][]Node
+	bdyNodes [2][]*Node
 }
 
 func (si *SegmentIntersector) isTrivialIntersection(e0 *Edge, segIndex0 int, e1 *Edge, segIndex1 int) bool {
@@ -47,7 +48,7 @@ func (si *SegmentIntersector) addIntersections(e0 *Edge, segIndex0 int, e1 *Edge
 	p10 := e1.pts[segIndex1]
 	p11 := e1.pts[segIndex1+1]
 
-	si.lineIntersection = xy.(p00, p01, p10, p11)
+	si.lineIntersection = xy.LinesIntersection(p00, p01, p10, p11)
 
 	//if (li.hasIntersection() && li.isProper()) Debug.println(li);
 	/**
@@ -56,8 +57,8 @@ func (si *SegmentIntersector) addIntersections(e0 *Edge, segIndex0 int, e1 *Edge
 	 */
 	if si.lineIntersection.HasIntersection() {
 		if si.recordIsolated {
-			e0.isIsolated = false
-			e1.isIsolated = false
+			e0.isolated = false
+			e1.isolated = false
 		}
 
 		// if the segments are adjacent they have at least one trivial intersection,

@@ -73,10 +73,8 @@ func (d *depth) isNullPos(geomIndex, posIndex int) bool {
 }
 
 // Normalize the depths for each geometry, if they are non-null.
-// A normalized depth
-// has depth values in the set { 0, 1 }.
-// Normalizing the depths
-// involves reducing the depths by the same amount so that at least
+// A normalized depth has depth values in the set { 0, 1 }.
+// Normalizing the depths involves reducing the depths by the same amount so that at least
 // one of them is 0.  If the remaining value is > 0, it is set to 1.
 func (d *depth) normalize() {
 	for i := 0; i < 2; i++ {

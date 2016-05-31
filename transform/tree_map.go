@@ -32,10 +32,9 @@ func (tm *TreeMap) Size() int {
 	return tm.size
 }
 
-// Insert adds a new coordinate to the tree set
-// the coordinate must be the same size as the Stride of the layout provided
-// when constructing the TreeSet
-// Returns true if the coordinate was added, false if it was already in the tree
+// Insert puts a key value pair into to the tree map.
+// Returns true if a new entry was added, false if the key
+// was already in the tree (the value may still have been updated)
 func (set *TreeMap) Insert(key, value interface{}) bool {
 	tree, added := set.insertImpl(set.tree, key, value)
 	if added {
@@ -44,6 +43,10 @@ func (set *TreeMap) Insert(key, value interface{}) bool {
 	}
 
 	return added
+}
+
+func (set *TreeMap) Get(key interface{}) (value interface{}, has bool) {
+	return set.getImpl(set.tree, key)
 }
 
 // Walk passes each element in the map to the visitor.  The order of visiting is from the element with the smallest key
@@ -61,13 +64,17 @@ func (tm *TreeMap) WalkInterruptible(visitor func(key, value interface{}) bool) 
 	tm.walk(tm.tree, visitor)
 }
 
-func (tm *TreeMap) walk(t *tree, visitor func(key, value interface{}) bool) {
+func (tm *TreeMap) walk(t *tree, visitor func(key, value interface{}) bool) bool {
 	if t == nil {
-		return
+		return true
 	}
-	tm.walk(t.left, visitor)
-	visitor(t.key, t.value)
-	tm.walk(t.right, visitor)
+	if !tm.walk(t.left, visitor) {
+		return false
+	}
+	if !visitor(t.key, t.value) {
+		return false
+	}
+	return tm.walk(t.right, visitor)
 }
 
 func (tm *TreeMap) insertImpl(t *tree, key, value interface{}) (*tree, bool) {
@@ -76,6 +83,7 @@ func (tm *TreeMap) insertImpl(t *tree, key, value interface{}) (*tree, bool) {
 	}
 
 	if tm.compare.IsEquals(key, t.key) {
+		t.value = value
 		return t, false
 	}
 
@@ -87,4 +95,17 @@ func (tm *TreeMap) insertImpl(t *tree, key, value interface{}) (*tree, bool) {
 	}
 
 	return t, added
+}
+
+func (tm *TreeMap) getImpl(t *tree, key interface{}) (interface{}, bool) {
+	switch {
+	case t == nil:
+		return nil, false
+	case tm.compare.IsEquals(key, t.key):
+		return t.value, true
+	case tm.compare.IsLess(key, t.key):
+		return tm.getImpl(t.left, key)
+	default:
+		return tm.getImpl(t.right, key)
+	}
 }
