@@ -357,7 +357,7 @@ func Distance(c1, c2 geom.Coord) float64 {
 	return internal.Distance2D(c1, c2)
 }
 
-// LocatePointOnGeom computes the topological relationship ({@link Location}) of a single point
+// LocatePointOnGeomSFSBoundaryRun computes the topological relationship ({@link Location}) of a single point
 // to a Geometry.
 // It handles both single-element and multi-element Geometries.
 // The algorithm for multi-part Geometries takes into account the SFS Boundary Determination Rule.

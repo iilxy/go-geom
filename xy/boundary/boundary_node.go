@@ -35,6 +35,7 @@ type NodeRule interface {
 // This is the rule specified by the OGC SFS and is the default rule used.
 type Mod2BoundaryNodeRule struct{}
 
+// IsInBoundary is the implementation for Mod2BoundaryNodeRule IsInBoundary.  See description in type for details
 func (r Mod2BoundaryNodeRule) IsInBoundary(boundaryCount int) bool {
 	return boundaryCount%2 == 1
 }
@@ -56,6 +57,7 @@ func (r Mod2BoundaryNodeRule) IsInBoundary(boundaryCount int) bool {
 // The EndPoint rule does distinguish between these cases, so is more appropriate for use.
 type EndPointBoundaryNodeRule struct{}
 
+// IsInBoundary is the implementation for EndPointBoundaryNodeRule IsInBoundary.  See description in type for details
 func (r EndPointBoundaryNodeRule) IsInBoundary(boundaryCount int) bool {
 	return boundaryCount > 0
 }
@@ -67,6 +69,7 @@ func (r EndPointBoundaryNodeRule) IsInBoundary(boundaryCount int) bool {
 // endpoints, but not the "unattached" ones.
 type MultiValentEndPointBoundaryNodeRule struct{}
 
+// IsInBoundary is the implementation for MultiValentEndPointBoundaryNodeRule IsInBoundary.  See description in type for details
 func (r MultiValentEndPointBoundaryNodeRule) IsInBoundary(boundaryCount int) bool {
 	return boundaryCount > 1
 }
@@ -78,6 +81,7 @@ func (r MultiValentEndPointBoundaryNodeRule) IsInBoundary(boundaryCount int) boo
 // the "unattached" endpoints.
 type MonoValentEndPointBoundaryNodeRule struct{}
 
+// IsInBoundary is the implementation for MonoValentEndPointBoundaryNodeRule IsInBoundary.  See description in type for details
 func (r MonoValentEndPointBoundaryNodeRule) IsInBoundary(boundaryCount int) bool {
 	return boundaryCount == 1
 }
