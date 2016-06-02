@@ -18,10 +18,6 @@ func (c coordCompare) IsLess(o1, o2 interface{}) bool {
 	return sorting.IsLess2D([]float64(o1.(geom.Coord)), []float64(o2.(geom.Coord)))
 }
 
-type NodeFactory interface {
-	create(coord geom.Coord) *Node
-}
-
 // NodeMap is map of nodes, indexed by the coordinate of the node
 type NodeMap struct {
 	nodeFactory NodeFactory

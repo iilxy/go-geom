@@ -107,7 +107,7 @@ func (de *DirectedEdge) isInteriorAreaEdge() bool {
 
 // Compute the label in the appropriate orientation for this DirEdge
 func (de *DirectedEdge) computeDirectedLabel() {
-	de.label = NewLabel(de.edge.label)
+	de.label = NewLabelFromTemplate(de.edge.label)
 	if !de.isForward {
 		de.label.flip()
 	}

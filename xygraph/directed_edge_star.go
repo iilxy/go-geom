@@ -19,7 +19,7 @@ type DirectedEdgeStar struct {
 
 var _ EdgeEndStar = &DirectedEdgeStar{}
 
-func NewDirectedEdgeStart(edgeList []EdgeEnd) *DirectedEdgeStar {
+func NewDirectedEdgeStar(edgeList []EdgeEnd) *DirectedEdgeStar {
 	star := &DirectedEdgeStar{
 		EdgeEndStarCommon: EdgeEndStarCommon{
 			ptInAreaLocation: [2]location.Type{location.None, location.None},

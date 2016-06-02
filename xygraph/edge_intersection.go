@@ -128,7 +128,7 @@ func (ei *edgeIntersectionList) createSplitEdge(ei0, ei1 *edgeIntersection) *Edg
 	if useIntPt1 {
 		pts[ipt] = ei1.coord
 	}
-	return NewEdge(pts, NewLabel(ei.edge.label))
+	return NewEdge(pts, NewLabelFromTemplate(ei.edge.label))
 }
 
 func (ei *edgeIntersectionList) print(out bufio.Writer) {

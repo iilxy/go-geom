@@ -1,6 +1,9 @@
 package transform
 
-import "github.com/twpayne/go-geom"
+import (
+	"github.com/twpayne/go-geom"
+	"github.com/twpayne/go-geom/sorting"
+)
 
 // UniqueCoords creates a new coordinate array (with the same layout as the inputs) that
 // contains each unique coordinate in the coordData.  The ordering of the coords are the
@@ -20,4 +23,13 @@ func UniqueCoords(layout geom.Layout, compare CoordCompare, coordData []float64)
 		}
 	}
 	return uniqueCoords[:numCoordsAdded*stride]
+}
+
+type XYCoordCompare struct{}
+
+func (c XYCoordCompare) IsEquals(x, y geom.Coord) bool {
+	return x[0] == y[0] && x[1] == y[1]
+}
+func (c XYCoordCompare) IsLess(x, y geom.Coord) bool {
+	return sorting.IsLess2D(x, y)
 }

@@ -7,7 +7,14 @@ import (
 
 type Label [2]TopologyLocation
 
-func NewLabel(template *Label) *Label {
+func NewLabel(geomIndex int, onLoc, leftLoc, rightLoc location.Type) *Label {
+	label := NewNullLabel()
+	label[geomIndex][ON] = onLoc
+	label[geomIndex][LEFT] = leftLoc
+	label[geomIndex][RIGHT] = rightLoc
+	return label
+}
+func NewLabelFromTemplate(template *Label) *Label {
 	return &Label{
 		NewTopologyLocationFromTemplate(template[0]),
 		NewTopologyLocationFromTemplate(template[1]),
