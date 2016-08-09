@@ -5,7 +5,7 @@ import (
 	"github.com/twpayne/go-geom"
 )
 
-type Quadrant int
+type quadrant int
 
 // Utility functions for working with quadrants, which are numbered as follows:
 //
@@ -14,7 +14,7 @@ type Quadrant int
 //     2 | 3
 //
 const (
-	NE Quadrant = iota
+	NE quadrant = iota
 	NW
 	SW
 	SE
@@ -22,7 +22,7 @@ const (
 
 //doublesQuadrant returns the quadrant of a directed line segment (specified as x and y
 // displacements, which cannot both be 0).
-func doublesQuadrant(dx, dy float64) Quadrant {
+func doublesQuadrant(dx, dy float64) quadrant {
 	if dx == 0.0 && dy == 0.0 {
 		panic(fmt.Sprintf("Cannot compute the quadrant for point (%v, %v)", dx, dy))
 	}
@@ -41,7 +41,7 @@ func doublesQuadrant(dx, dy float64) Quadrant {
 }
 
 // coordsQuadrant returns the quadrant of a directed line segment from p0 to p1.
-func coordsQuadrant(p0, p1 geom.Coord) Quadrant {
+func coordsQuadrant(p0, p1 geom.Coord) quadrant {
 	if p1[0] == p0[0] && p1[1] == p0[1] {
 		panic(fmt.Sprintf("Cannot compute the quadrant for two identical points %v", p0))
 	}
@@ -60,7 +60,7 @@ func coordsQuadrant(p0, p1 geom.Coord) Quadrant {
 }
 
 // isOpposite returns true if the quadrants are 1 and 3, or 2 and 4
-func (quad1 Quadrant) isOpposite(quad2 Quadrant) bool {
+func (quad1 quadrant) isOpposite(quad2 quadrant) bool {
 	if quad1 == quad2 {
 		return false
 	}
@@ -76,7 +76,7 @@ func (quad1 Quadrant) isOpposite(quad2 Quadrant) bool {
 
 // commonHalfPlane returns the right-hand quadrant of the halfplane defined by the two quadrants,
 // or -1 if the quadrants are opposite, or the quadrant if they are identical.
-func (quad1 Quadrant) commonHalfPlane(quad2 Quadrant) Quadrant {
+func (quad1 quadrant) commonHalfPlane(quad2 quadrant) quadrant {
 	// if quadrants are the same they do not determine a unique common halfplane.
 	// Simply return one of the two possibilities
 	if quad1 == quad2 {
@@ -109,7 +109,7 @@ func (quad1 Quadrant) commonHalfPlane(quad2 Quadrant) Quadrant {
 
 // isInHalfPlane Returns whether the given quadrant lies within the given halfplane (specified
 // by its right-hand quadrant).
-func (quad Quadrant) isInHalfPlane(halfPlane Quadrant) bool {
+func (quad quadrant) isInHalfPlane(halfPlane quadrant) bool {
 
 	if halfPlane == SE {
 		return quad == SE || quad == SW
@@ -117,6 +117,6 @@ func (quad Quadrant) isInHalfPlane(halfPlane Quadrant) bool {
 	return quad == halfPlane || quad == halfPlane+1
 }
 
-func (quad Quadrant) isNorthern() bool {
+func (quad quadrant) isNorthern() bool {
 	return quad == NE || quad == NW
 }

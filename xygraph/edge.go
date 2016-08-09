@@ -9,43 +9,53 @@ import (
 )
 
 type Edge struct {
-	CommonGraphComponent
-	pts      []geom.Coord
-	env      *geom.Bounds
-	eiList   edgeIntersectionList
-	name     string
-	mce      *MonotoneChainEdge
-	isolated bool
-	depth    depth
+	commonGraphComponent
+	layout     geom.Layout
+	pts        []float64
+	env        *geom.Bounds
+	eiList     edgeIntersectionList
+	name       string
+	mce        *monotoneChainEdge
+	isolated   bool
+	depth      depth
 	// depthDelta is the change in depth as an edge is crossed from R to L
 	depthDelta int
 }
 
 var _ GraphComponent = &Edge{}
 
-func NewEdge(pts []geom.Coord, label *Label) *Edge {
+func NewEdge(layout geom.Layout, pts []float64, label *Label) *Edge {
 	return &Edge{
-		CommonGraphComponent: CommonGraphComponent{
+		commonGraphComponent: commonGraphComponent{
 			label: label,
 		},
+		layout:   layout,
 		pts:      pts,
 		isolated: true,
 		depth:    newDepth(),
 	}
 }
 
-func (e *Edge) Envelope() *geom.Bounds {
+func (e *Edge) bounds() *geom.Bounds {
 	// compute envelope lazily
 	if e.env == nil {
 		e.env = geom.NewBounds(geom.XY)
-		for _, c := range e.pts {
+		stride := e.layout.Stride()
+		for i := 0; i < len(e.pts) - stride; i += stride {
+			c := geom.Coord(e.pts[i:i + stride])
 			e.env.ExtendWithCoord(c)
 		}
 	}
 	return e.env
 }
 
-func (e *Edge) MonotoneChainEdge() *MonotoneChainEdge {
+func (e *Edge) Coord(idx int) geom.Coord {
+	return geom.Coord(e.pts[idx:idx + e.layout.Stride()])
+}
+func (e *Edge) NumCoords() int {
+	return len(e.pts) / e.layout.Stride()
+}
+func (e *Edge) MonotoneChainEdge() *monotoneChainEdge {
 	if e.mce == nil {
 		e.mce = newMonotoneChainEdge(e)
 	}
@@ -54,7 +64,7 @@ func (e *Edge) MonotoneChainEdge() *MonotoneChainEdge {
 }
 
 func (e *Edge) isClosed() bool {
-	return xy.Equal(e.pts[0], 0, e.pts[len(e.pts)-1], 0)
+	return xy.Equal(e.pts, 0, e.pts, len(e.pts) - e.layout.Stride() - 1)
 }
 
 // isCollapsed returns true if the edge is an Area edge and it consists of two
@@ -66,15 +76,15 @@ func (e *Edge) isCollapsed() bool {
 	if len(e.pts) != 3 {
 		return false
 	}
-	if xy.Equal(e.pts[0], 0, e.pts[2], 0) {
+	if xy.Equal(e.pts, 0, e.pts, 2 * e.layout.Stride()) {
 		return true
 	}
 	return false
 }
 
-func (e *Edge) Coordinate() geom.Coord {
+func (e *Edge) getCoord() geom.Coord {
 	if len(e.pts) > 0 {
-		return e.pts[0]
+		return geom.Coord(e.pts[:e.layout.Stride()])
 	}
 	return nil
 }
@@ -82,8 +92,10 @@ func (e *Edge) isIsolated() bool {
 	return e.isolated
 }
 func (e *Edge) collapsedEdge() *Edge {
-	newPts := [2]geom.Coord{e.pts[0], e.pts[1]}
-	return NewEdge(newPts[:], e.label.toLineLabel())
+	newPts := make([]float64, e.layout.Stride() * 2)
+	copy(newPts, e.pts)
+
+	return NewEdge(e.layout, newPts, e.label.toLineLabel())
 }
 
 // Adds EdgeIntersections for one or both
@@ -98,12 +110,16 @@ func (e *Edge) addIntersections(li lineintersection.Result, segmentIndex, geomIn
 func (e *Edge) addIntersection(intPt geom.Coord, segmentIndex, geomIndex int) {
 	normalizedSegmentIndex := segmentIndex
 
-	dist := xy.DistanceFromPointToLine(intPt, e.pts[geomIndex], e.pts[geomIndex+1])
+	stride := e.layout.Stride()
+	segmentStart := geom.Coord(e.pts[geomIndex:geomIndex + stride])
+	segmentEnd := geom.Coord(e.pts[geomIndex + stride:geomIndex + stride + stride])
+	dist := xy.DistanceFromPointToLine(intPt, segmentStart, segmentEnd)
 
 	// normalize the intersection point location
 	nextSegIndex := normalizedSegmentIndex + 1
 	if nextSegIndex < len(e.pts) {
-		nextPt := e.pts[nextSegIndex]
+		arrayIdx := nextSegIndex * stride
+		nextPt := e.pts[arrayIdx:arrayIdx + stride]
 
 		// Normalize segment index if intPt falls on vertex
 		// The check for point equality is 2D only - Z values are ignored
@@ -123,10 +139,10 @@ func (e *Edge) computeIM(im IntersectionMatrix) {
 }
 
 func updateIM(label *Label, im IntersectionMatrix) {
-	im.setAtLeastIfValid(int(label[0][ON]), int(label[1][ON]), 1)
+	im.SetAtLeastIfValid(int(label[0][ON]), int(label[1][ON]), 1)
 	if label.isArea() {
-		im.setAtLeastIfValid(int(label[0][LEFT]), int(label[1][LEFT]), 2)
-		im.setAtLeastIfValid(int(label[0][RIGHT]), int(label[1][RIGHT]), 2)
+		im.SetAtLeastIfValid(int(label[0][LEFT]), int(label[1][LEFT]), 2)
+		im.SetAtLeastIfValid(int(label[0][RIGHT]), int(label[1][RIGHT]), 2)
 	}
 
 }
@@ -136,8 +152,10 @@ func (e *Edge) isPointwiseEqual(o Edge) bool {
 		return false
 	}
 
-	for i := 0; i < len(e.pts); i++ {
-		if !xy.Equal(e.pts[i], 0, o.pts[i], 0) {
+	stride := e.layout.Stride()
+
+	for i := 0; i < len(e.pts); i += stride {
+		if !xy.Equal(e.pts, 0, o.pts, i * stride) {
 			return false
 		}
 	}
@@ -149,16 +167,18 @@ func (e *Edge) equal(o Edge) bool {
 		return false
 	}
 
+	stride := e.layout.Stride()
+
 	isEqualForward := true
 	isEqualReverse := true
 	iRev := len(e.pts)
-	for i := 0; i < len(e.pts); i++ {
-		if !xy.Equal(e.pts[i], 0, o.pts[i], 0) {
+	for i := 0; i < len(e.pts); i += stride {
+		if !xy.Equal(e.pts, i, o.pts, i + stride) {
 			isEqualForward = false
 		}
-		otherPt := o.pts[iRev]
-		iRev = iRev - 1
-		if !xy.Equal(e.pts[i], 0, otherPt, 0) {
+
+		iRev = iRev - stride
+		if !xy.Equal(e.pts, i, e.pts, iRev) {
 			isEqualReverse = false
 		}
 		if !isEqualForward && !isEqualReverse {
@@ -173,11 +193,13 @@ func (e *Edge) String() string {
 	buf := bytes.Buffer{}
 	buf.WriteString(fmt.Sprintf("edge %v:", e.name))
 	buf.WriteString("LINESTRING (")
-	for i, v := range e.pts {
+	stride := e.layout.Stride()
+
+	for i := 0; i < len(e.pts); i += stride {
 		if i > 0 {
 			buf.WriteString(",")
 		}
-		buf.WriteString(fmt.Sprintf("%v %v", v[0], v[1]))
+		buf.WriteString(fmt.Sprintf("%v %v", e.pts[i:i + stride], e.pts[i + stride:i + stride + stride]))
 	}
 	buf.WriteString(fmt.Sprintf(")  %v %v", e.label, e.depthDelta))
 	return buf.String()

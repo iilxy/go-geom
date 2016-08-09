@@ -47,7 +47,7 @@ func (ei *edgeIntersection) print(out bufio.Writer) {
 }
 
 type edgeIntersectionList struct {
-	edge *Edge
+	edge    *Edge
 	// key is id of an EdgeIntersection
 	nodeMap map[edgeIntersectionId]*edgeIntersection
 }
@@ -72,9 +72,10 @@ func (ei *edgeIntersectionList) isIntersection(pt geom.Coord) bool {
 }
 
 func (ei *edgeIntersectionList) addEndpoints() {
-	maxSegIndex := len(ei.edge.pts) - 1
-	ei.add(ei.edge.pts[0], 0, 0.0)
-	ei.add(ei.edge.pts[maxSegIndex], maxSegIndex, 0.0)
+	stride := ei.edge.layout.Stride()
+	maxSegIndex := len(ei.edge.pts) - stride
+	ei.add(geom.Coord(ei.edge.pts[:stride]), 0, 0.0)
+	ei.add(ei.edge.pts[maxSegIndex:], maxSegIndex / stride, 0.0)
 }
 
 // addSplitEdgesTo creates new edges for all the edges that the intersections in this list split the parent edge into.
@@ -103,32 +104,30 @@ func (ei *edgeIntersectionList) addSplitEdgesTo(edgeList []*Edge) []*Edge {
 // (and including) the two intersections.
 // The label for the new edge is the same as the label for the parent edge.
 func (ei *edgeIntersectionList) createSplitEdge(ei0, ei1 *edgeIntersection) *Edge {
-	npts := ei1.segmentIndex - ei0.segmentIndex + 2
-
-	lastSegStartPt := ei.edge.pts[ei1.segmentIndex]
+	stride := ei.edge.layout.Stride()
+	e0StartIndexInArray := ei0.segmentIndex * stride
+	e1StartIndexInArray := ei1.segmentIndex * stride
+	npts := (ei1.segmentIndex - ei0.segmentIndex + 2) * stride
 
 	// if the last intersection point is not equal to the its segment start pt,
 	// add it to the points list as well.
 	// (This check is needed because the distance metric is not totally reliable!)
 	// The check for point equality is 2D only - Z values are ignored
-	useIntPt1 := ei1.dist > 0.0 || !xy.Equal(ei1.coord, 0, lastSegStartPt, 0)
+	useIntPt1 := ei1.dist > 0.0 || !xy.Equal(ei1.coord, 0, ei.edge.pts, e1StartIndexInArray)
 
 	if !useIntPt1 {
-		npts--
+		npts-=stride
 	}
 
-	pts := make([]geom.Coord, npts)
-	ipt := 0
-	copy(pts[ipt], ei0.coord)
-	ipt++
-	for i := ei0.segmentIndex + 1; i <= ei1.segmentIndex; i++ {
-		pts[ipt] = ei.edge.pts[i]
-		ipt++
-	}
+	pts := make([]float64, npts, 0)
+	pts = append(pts, ei0.coord...)
+	pts = append(pts, ei.edge.pts[e0StartIndexInArray + stride : e1StartIndexInArray]...)
+
 	if useIntPt1 {
-		pts[ipt] = ei1.coord
+		pts = append(pts, ei1.coord...)
 	}
-	return NewEdge(pts, NewLabelFromTemplate(ei.edge.label))
+
+	return NewEdge(ei.edge.layout, pts, NewLabelFromTemplate(ei.edge.label))
 }
 
 func (ei *edgeIntersectionList) print(out bufio.Writer) {

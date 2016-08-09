@@ -1,11 +1,11 @@
 package xygraph
 
-type SimpleEdgeSetIntersector struct {
+type simpleEdgeSetIntersector struct {
 }
 
-var _ EdgeSetIntersector = &SimpleEdgeSetIntersector{}
+var _ edgeSetIntersector = &simpleEdgeSetIntersector{}
 
-func (s *SimpleEdgeSetIntersector) computeIntersections(edges []*Edge, si SegmentIntersector, testAllSegments bool) {
+func (s *simpleEdgeSetIntersector) computeIntersections(edges []*Edge, si SegmentIntersector, testAllSegments bool) {
 	for _, edge0 := range edges {
 		for _, edge1 := range edges {
 			if testAllSegments || edge0 != edge1 {
@@ -14,7 +14,7 @@ func (s *SimpleEdgeSetIntersector) computeIntersections(edges []*Edge, si Segmen
 		}
 	}
 }
-func (s *SimpleEdgeSetIntersector) computeIntersectionsForEdges(edges0, edges1 []*Edge, si SegmentIntersector) {
+func (s *simpleEdgeSetIntersector) computeIntersectionsForEdges(edges0, edges1 []*Edge, si SegmentIntersector) {
 	for _, edge0 := range edges0 {
 		for _, edge1 := range edges1 {
 			s.computeIntersects(edge0, edge1, si)
@@ -22,7 +22,7 @@ func (s *SimpleEdgeSetIntersector) computeIntersectionsForEdges(edges0, edges1 [
 	}
 }
 
-func (s *SimpleEdgeSetIntersector) computeIntersects(e0, e1 *Edge, si SegmentIntersector) {
+func (s *simpleEdgeSetIntersector) computeIntersects(e0, e1 *Edge, si SegmentIntersector) {
 	pts0 := e0.pts
 	pts1 := e1.pts
 

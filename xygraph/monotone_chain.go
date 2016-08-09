@@ -1,10 +1,10 @@
 package xygraph
 
-type MonotoneChain struct {
-	mce        *MonotoneChainEdge
+type monotoneChain struct {
+	mce        *monotoneChainEdge
 	chainIndex int
 }
 
-func (mc *MonotoneChain) computeIntersections(other MonotoneChain, si SegmentIntersector) {
+func (mc *monotoneChain) computeIntersections(other monotoneChain, si SegmentIntersector) {
 	mc.mce.computeIntersectsForChain(mc.chainIndex, other.mce, other.chainIndex, si)
 }

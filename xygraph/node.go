@@ -7,27 +7,34 @@ import (
 )
 
 type Node struct {
-	CommonGraphComponent
+	commonGraphComponent
 	coord geom.Coord
-	edges EdgeEndStar
+	edges edgeEndStar
 }
 
 var _ GraphComponent = &Node{}
 
-func (n *Node) Coordinate() geom.Coord {
+func (n *Node) getCoord() geom.Coord {
 	return n.coord
 }
 
+func (n *Node) getEdges() edgeEndStar {
+	if n.edges == nil {
+		n.edges = newEdgeEndStarCommon()
+	}
+
+	return n.edges
+}
 // isIncidentEdgeInResult Tests whether any incident edge is flagged as being in the result.
 //
 // This test can be used to determine if the node is in the result,
 // since if any incident edge is in the result, the node must be in the result as well.
-
 func (n *Node) isIncidentEdgeInResult() bool {
 	result := false
-	n.edges.Iterate(func(e EdgeEnd) bool {
-		de := e.(*DirectedEdge)
-		if de.Edge().isInResult {
+
+	n.getEdges().iterate(func(e edgeEnd) bool {
+		de := e.(*directedEdge)
+		if de.edge.isInResult {
 			result = true
 			return false
 		}
@@ -46,10 +53,10 @@ func (n *Node) computeIM(im IntersectionMatrix) {
 }
 
 // add sdds the edge to the list of edges at this node
-func (n *Node) add(e EdgeEnd) {
+func (n *Node) add(e edgeEnd) {
 	// Assert: start pt of e is equal to node point
-	n.edges.insert(e)
-	e.SetNode(n)
+	n.getEdges().insert(e)
+	e.setNode(n)
 }
 
 func (n *Node) mergeNodeLabels(other Node) {
@@ -61,7 +68,7 @@ func (n *Node) mergeLabel(label2 *Label) {
 		loc := n.computeMergedLocation(label2, i)
 		thisLoc := n.label[i][ON]
 		if thisLoc == location.None {
-			n.label[i] = NewOnTopologyLocation(loc)
+			n.label[i] = newOnTopologyLocation(loc)
 		}
 	}
 }
@@ -70,7 +77,7 @@ func (n *Node) setLabel(argIndex int, onLocation location.Type) {
 	if n.label == nil {
 		n.label = NewHomogeneousLabel(onLocation)
 	} else {
-		n.label[argIndex] = NewOnTopologyLocation(onLocation)
+		n.label[argIndex] = newOnTopologyLocation(onLocation)
 	}
 }
 
@@ -95,7 +102,7 @@ func (n *Node) setLabelBoundary(argIndex int) {
 	default:
 		newLoc = location.Boundary
 	}
-	n.label[argIndex] = NewOnTopologyLocation(newLoc)
+	n.label[argIndex] = newOnTopologyLocation(newLoc)
 }
 
 func (n *Node) computeMergedLocation(label2 *Label, eltIndex int) location.Type {

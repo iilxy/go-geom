@@ -5,12 +5,15 @@ import "github.com/twpayne/go-geom"
 type NodeFactory interface {
 	create(coord geom.Coord) *Node
 }
+
 type DefaultNodeFactory struct{}
 
 var _ NodeFactory = DefaultNodeFactory{}
 
 func (onf DefaultNodeFactory) create(coord geom.Coord) *Node {
-	return Node{coord: coord}
+	return &Node{
+		edges:newEdgeEndStarCommon(),
+		coord: coord}
 }
 
 type OverlayNodeFactory struct{}
@@ -18,8 +21,8 @@ type OverlayNodeFactory struct{}
 var _ NodeFactory = OverlayNodeFactory{}
 
 func (onf OverlayNodeFactory) create(coord geom.Coord) *Node {
-	return Node{
+	return &Node{
 		coord: coord,
-		edges: NewDirectedEdgeStar([]EdgeEnd{}),
+		edges: NewDirectedEdgeStar([]edgeEnd{}),
 	}
 }

@@ -43,10 +43,10 @@ func (si *SegmentIntersector) addIntersections(e0 *Edge, segIndex0 int, e1 *Edge
 		return
 	}
 
-	p00 := e0.pts[segIndex0]
-	p01 := e0.pts[segIndex0+1]
-	p10 := e1.pts[segIndex1]
-	p11 := e1.pts[segIndex1+1]
+	p00 := e0.Coord(segIndex0)
+	p01 := e0.Coord(segIndex0+1)
+	p10 := e1.Coord(segIndex1)
+	p11 := e1.Coord(segIndex1+1)
 
 	si.lineIntersection = xy.LinesIntersection(p00, p01, p10, p11)
 

@@ -5,23 +5,23 @@ import (
 	"github.com/twpayne/go-geom/xy/location"
 )
 
-type TopologyLocation []location.Type
+type topologyLocation []location.Type
 
-func NewTopologyLocationFromTemplate(template TopologyLocation) TopologyLocation {
-	topoLoc := make(TopologyLocation, len(template))
+func newTopologyLocationFromTemplate(template topologyLocation) topologyLocation {
+	topoLoc := make(topologyLocation, len(template))
 	copy(topoLoc, template)
 	return topoLoc
 }
 
-func NewOnTopologyLocation(on location.Type) TopologyLocation {
-	return TopologyLocation{on}
+func newOnTopologyLocation(on location.Type) topologyLocation {
+	return topologyLocation{on}
 }
 
-func NewTopologyLocation(on, left, right location.Type) TopologyLocation {
-	return TopologyLocation{on, left, right}
+func newTopologyLocation(on, left, right location.Type) topologyLocation {
+	return topologyLocation{on, left, right}
 }
 
-func (topoLoc TopologyLocation) isNull() bool {
+func (topoLoc topologyLocation) isNull() bool {
 	for _, l := range topoLoc {
 		if l != location.None {
 			return false
@@ -31,19 +31,19 @@ func (topoLoc TopologyLocation) isNull() bool {
 	return true
 }
 
-func (topoLoc TopologyLocation) isEqualOnSide(le TopologyLocation, locIndex int) bool {
+func (topoLoc topologyLocation) isEqualOnSide(le topologyLocation, locIndex int) bool {
 	return topoLoc[locIndex] == le[locIndex]
 }
 
-func (topoLoc TopologyLocation) isArea() bool {
+func (topoLoc topologyLocation) isArea() bool {
 	return len(topoLoc) > 1
 }
 
-func (topoLoc TopologyLocation) isLine() bool {
+func (topoLoc topologyLocation) isLine() bool {
 	return len(topoLoc) == 1
 }
 
-func (topoLoc TopologyLocation) flip() {
+func (topoLoc topologyLocation) flip() {
 	if len(topoLoc) <= 1 {
 		return
 	}
@@ -52,20 +52,20 @@ func (topoLoc TopologyLocation) flip() {
 	topoLoc[RIGHT] = temp
 }
 
-func (topoLoc TopologyLocation) setAllLocations(locValue location.Type) {
+func (topoLoc topologyLocation) setAllLocations(locValue location.Type) {
 	for i := 0; i < len(topoLoc); i++ {
 		topoLoc[i] = locValue
 	}
 }
 
-func (topoLoc TopologyLocation) setAllLocationsIfNull(locValue location.Type) {
+func (topoLoc topologyLocation) setAllLocationsIfNull(locValue location.Type) {
 	for i := 0; i < len(topoLoc); i++ {
 		if topoLoc[i] == location.None {
 			topoLoc[i] = locValue
 		}
 	}
 }
-func (topoLoc TopologyLocation) allPositionsEqual(loc location.Type) bool {
+func (topoLoc topologyLocation) allPositionsEqual(loc location.Type) bool {
 	for _, l := range topoLoc {
 		if l != loc {
 			return false
@@ -73,7 +73,7 @@ func (topoLoc TopologyLocation) allPositionsEqual(loc location.Type) bool {
 	}
 	return true
 }
-func (topoLoc TopologyLocation) merge(gl TopologyLocation) TopologyLocation {
+func (topoLoc topologyLocation) merge(gl topologyLocation) topologyLocation {
 	// if the src is an Area label & and the dest is not, increase the dest to be an Area
 	if len(gl) > len(topoLoc) {
 		newLoc := make([]location.Type, 3)
@@ -91,7 +91,7 @@ func (topoLoc TopologyLocation) merge(gl TopologyLocation) TopologyLocation {
 	return topoLoc
 }
 
-func (topoLoc TopologyLocation) String() string {
+func (topoLoc topologyLocation) String() string {
 	buffer := bytes.Buffer{}
 	if len(topoLoc) > 1 {
 		buffer.WriteRune(topoLoc[LEFT].Symbol())

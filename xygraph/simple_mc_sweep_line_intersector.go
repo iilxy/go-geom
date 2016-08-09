@@ -4,14 +4,14 @@ import (
 	"sort"
 )
 
-type SimpleMCSweepLineIntersector struct {
+type simpleMCSweepLineIntersector struct {
 	nOverlaps int
 	events    []*SweepLineEvent
 }
 
-var _ EdgeSetIntersector = &SimpleMCSweepLineIntersector{}
+var _ edgeSetIntersector = &simpleMCSweepLineIntersector{}
 
-func (s *SimpleMCSweepLineIntersector) computeIntersections(edges []*Edge, si SegmentIntersector, testAllSegments bool) {
+func (s *simpleMCSweepLineIntersector) computeIntersections(edges []*Edge, si SegmentIntersector, testAllSegments bool) {
 
 	if testAllSegments {
 		s.addEdgeListToEdgeSet(edges, nil)
@@ -21,38 +21,38 @@ func (s *SimpleMCSweepLineIntersector) computeIntersections(edges []*Edge, si Se
 	s.computeIntersectionsFromEvents(si)
 }
 
-func (s *SimpleMCSweepLineIntersector) computeIntersectionsForEdges(edges0, edges1 []*Edge, si SegmentIntersector) {
+func (s *simpleMCSweepLineIntersector) computeIntersectionsForEdges(edges0, edges1 []*Edge, si SegmentIntersector) {
 	s.addEdgeListToEdgeSet(edges0, edges0)
 	s.addEdgeListToEdgeSet(edges1, edges1)
 	s.computeIntersectionsFromEvents(si)
 }
 
-func (s *SimpleMCSweepLineIntersector) addEdges(edges []*Edge) {
+func (s *simpleMCSweepLineIntersector) addEdges(edges []*Edge) {
 	for _, edge := range edges {
 		// edge is its own group
 		s.addEdgeToEdgeSet(edge, edge)
 	}
 }
-func (s *SimpleMCSweepLineIntersector) addEdgeListToEdgeSet(edges []*Edge, edgeSet interface{}) {
+func (s *simpleMCSweepLineIntersector) addEdgeListToEdgeSet(edges []*Edge, edgeSet interface{}) {
 	for _, edge := range edges {
 		s.addEdgeToEdgeSet(edge, edgeSet)
 	}
 }
-func (s *SimpleMCSweepLineIntersector) addEdgeToEdgeSet(edge *Edge, edgeSet interface{}) {
+func (s *simpleMCSweepLineIntersector) addEdgeToEdgeSet(edge *Edge, edgeSet interface{}) {
 	mce := edge.mce
 	startIndex := mce.startIndex
 	for i, _ := range startIndex {
-		mc := MonotoneChain{mce: mce, chainIndex: i}
-		insertEvent := NewSweepLineEvent(edgeSet, mce.MinX(i), nil, mc)
+		mc := monotoneChain{mce: mce, chainIndex: i}
+		insertEvent := NewSweepLineEvent(edgeSet, mce.minX(i), nil, mc)
 		s.events = append(s.events, insertEvent)
-		s.events = append(s.events, NewSweepLineEvent(edgeSet, mce.MaxX(i), insertEvent, mc))
+		s.events = append(s.events, NewSweepLineEvent(edgeSet, mce.maxX(i), insertEvent, mc))
 	}
 }
 
 // Because Delete Events have a link to their corresponding Insert event,
 // it is possible to compute exactly the range of events which must be
 // compared to a given Insert event object.
-func prepareEvents(events []SweepLineEvent) {
+func prepareEvents(events []*SweepLineEvent) {
 	sort.Sort(SortableSweepLineEvents{events})
 	for i, ev := range events {
 		if ev.eventType == DELETE {
@@ -61,7 +61,7 @@ func prepareEvents(events []SweepLineEvent) {
 	}
 }
 
-func (s *SimpleMCSweepLineIntersector) computeIntersectionsFromEvents(si SegmentIntersector) {
+func (s *simpleMCSweepLineIntersector) computeIntersectionsFromEvents(si SegmentIntersector) {
 	s.nOverlaps = 0
 	prepareEvents(s.events)
 
@@ -72,8 +72,8 @@ func (s *SimpleMCSweepLineIntersector) computeIntersectionsFromEvents(si Segment
 	}
 }
 
-func (s *SimpleMCSweepLineIntersector) processOverlaps(start, end int, ev0 SweepLineEvent, si SegmentIntersector) {
-	mc0 := ev0.obj.(MonotoneChain)
+func (s *simpleMCSweepLineIntersector) processOverlaps(start, end int, ev0 *SweepLineEvent, si SegmentIntersector) {
+	mc0 := ev0.obj.(monotoneChain)
 	// Since we might need to test for self-intersections,
 	// include current insert event object in list of event objects to test.
 	// Last index can be skipped, because it must be a Delete event.
@@ -81,7 +81,7 @@ func (s *SimpleMCSweepLineIntersector) processOverlaps(start, end int, ev0 Sweep
 	for i := start; i < end; i++ {
 		ev1 := s.events[i]
 		if ev1.eventType == INSERT {
-			mc1 := ev1.obj.(MonotoneChain)
+			mc1 := ev1.obj.(monotoneChain)
 			// don't compare edges in same group
 			// null group indicates that edges should be compared
 			if ev0.edgeSet == nil || ev0.edgeSet != ev1.edgeSet {
@@ -128,10 +128,10 @@ type SortableSweepLineEvents struct {
 	events []*SweepLineEvent
 }
 
-func (s *SortableSweepLineEvents) Len() int {
+func (s SortableSweepLineEvents) Len() int {
 	return len(s.events)
 }
-func (s *SortableSweepLineEvents) Less(i, j int) bool {
+func (s SortableSweepLineEvents) Less(i, j int) bool {
 	e1 := s.events[i]
 	e2 := s.events[2]
 	if e1.xValue < e2.xValue {
@@ -146,6 +146,6 @@ func (s *SortableSweepLineEvents) Less(i, j int) bool {
 	return false
 }
 
-func (s *SortableSweepLineEvents) Swap(i, j int) {
+func (s SortableSweepLineEvents) Swap(i, j int) {
 	s.events[i], s.events[j] = s.events[j], s.events[i]
 }

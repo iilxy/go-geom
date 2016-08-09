@@ -3,6 +3,7 @@ package xy
 import (
 	"github.com/twpayne/go-geom"
 	"github.com/twpayne/go-geom/xy/location"
+	"github.com/twpayne/go-geom/xy/internal/raycrossing"
 )
 
 // LocatePointInGeom returns the location of the point with regards to the geometry t. (Exterior or Interior)
@@ -61,5 +62,5 @@ func isPointInRing(p geom.Coord, ring *geom.LinearRing) bool {
 	if !ring.Bounds().OverlapsPoint(ring.Layout(), p) {
 		return false
 	}
-	return IsPointInRing(ring.Layout(), p, ring.FlatCoords())
+	return raycrossing.LocatePointInRing(ring.Layout(), p, ring.FlatCoords())
 }

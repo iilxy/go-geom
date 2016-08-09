@@ -7,12 +7,6 @@ import (
 	"github.com/twpayne/go-geom/xy/orientation"
 )
 
-func linkResultDirectedEdges(nodes []*Node) {
-	for _, node := range nodes {
-		node.edges.(DirectedEdgeStar).linkResultDirectedEdges()
-	}
-}
-
 // PlanarGraph contains nodes and edges corresponding to the nodes and line segments of
 // a Geometry. Each node and edge in the graph is labeled with its topological location
 // relative to the source geometry.
@@ -26,17 +20,31 @@ func linkResultDirectedEdges(nodes []*Node) {
 // * Computing the intersections between the edges and nodes of two different graphs
 type PlanarGraph struct {
 	edges       []*Edge
-	nodes       *NodeMap
-	edgeEndList []EdgeEnd
+	nodes       *nodeMap
+	edgeEndList []edgeEnd
+}
+
+func NewPlanarGraphDefaultNodeFactory() *PlanarGraph {
+	return NewPlanarGraph(DefaultNodeFactory{})
 }
 
 func NewPlanarGraph(nodeFactory NodeFactory) *PlanarGraph {
 	return &PlanarGraph{
-		nodes: &NodeMap{nodeFactory: nodeFactory},
+		nodes: &nodeMap{
+			nodeMap: newNodeMapTreeMap(),
+			nodeFactory: nodeFactory},
 	}
 }
 
-func (pg *PlanarGraph) isBoundaryNode(geomIndex int, coord geom.Coord) {
+func (pg *PlanarGraph) WalkEdges(walker func(edge *Edge) (continueWalk bool)) {
+	for _, edge := range pg.edges {
+		if continueWalk := walker(edge); !continueWalk {
+			break;
+		}
+	}
+}
+
+func (pg *PlanarGraph) isBoundaryNode(geomIndex int, coord geom.Coord) bool {
 	node, has := pg.nodes.find(coord)
 	if !has {
 		return false
@@ -51,29 +59,33 @@ func (pg *PlanarGraph) isBoundaryNode(geomIndex int, coord geom.Coord) {
 func (pg *PlanarGraph) insertEdge(e *Edge) {
 	pg.edges = append(pg.edges, e)
 }
-func (pg *PlanarGraph) addEdgeEnd(edgeEnd EdgeEnd) {
+
+func (pg *PlanarGraph) addEdgeEnd(edgeEnd edgeEnd) {
 	pg.nodes.addEdgeEnd(edgeEnd)
 	pg.edgeEndList = append(pg.edgeEndList, edgeEnd)
 }
+
 func (pg *PlanarGraph) addNode(n *Node) *Node {
 	return pg.nodes.addNode(n)
 }
+
 func (pg *PlanarGraph) addCoord(c geom.Coord) *Node {
 	return pg.nodes.addCoordNode(c)
 }
+
 func (pg *PlanarGraph) find(c geom.Coord) {
 	pg.nodes.find(c)
 }
 
 // addEdges add a set of edges to the graph.  For each edge two DirectedEdges
 // will be created.  DirectedEdges are NOT linked by this method.
-func (pg *PlanarGraph) addEdges(edgesToAdd []*Edge) {
+func (pg *PlanarGraph) AddEdges(edgesToAdd []*Edge) {
 	// create all the nodes for the edges
 	for _, e := range edgesToAdd {
 		pg.edges = append(pg.edges, e)
 
-		de1 := NewDirectedEdge(e, true)
-		de2 := NewDirectedEdge(e, false)
+		de1 := newDirectedEdge(e, true)
+		de2 := newDirectedEdge(e, false)
 		de1.sym = de2
 		de2.sym = de1
 
@@ -88,7 +100,7 @@ func (pg *PlanarGraph) addEdges(edgesToAdd []*Edge) {
 func (pg *PlanarGraph) linkResultDirectedEdges() {
 	pg.nodes.nodeMap.Walk(func(c, n interface{}) {
 		node := n.(*Node)
-		node.edges.(DirectedEdgeStar).linkResultDirectedEdges()
+		node.edges.(*directedEdgeStar).linkResultDirectedEdges()
 	})
 }
 
@@ -98,15 +110,15 @@ func (pg *PlanarGraph) linkResultDirectedEdges() {
 func (pg *PlanarGraph) linkAllDirectedEdges() {
 	pg.nodes.nodeMap.Walk(func(c, n interface{}) {
 		node := n.(*Node)
-		node.edges.(DirectedEdgeStar).linkAllDirectedEdges()
+		node.edges.(*directedEdgeStar).linkAllDirectedEdges()
 	})
 }
 
 // findEdgeEnd Returns the EdgeEnd which has edge e as its base edge
 // (MD 18 Feb 2002 - this should return a pair of edges)
-func (pg *PlanarGraph) findEdgeEnd(e EdgeEnd) (result EdgeEnd, has bool) {
+func (pg *PlanarGraph) findEdgeEnd(e *Edge) (result edgeEnd, has bool) {
 	for _, ee := range pg.edgeEndList {
-		if ee.Edge() == e {
+		if ee.getEdge() == e {
 			return ee, true
 		}
 	}
@@ -117,7 +129,7 @@ func (pg *PlanarGraph) findEdgeEnd(e EdgeEnd) (result EdgeEnd, has bool) {
 // findEdge finds the edge whose first two coordinates are p0 and p1
 func (pg *PlanarGraph) findEdge(p0, p1 geom.Coord) (edge *Edge, has bool) {
 	for _, e := range pg.edges {
-		if xy.Equal(p0, 0, e.pts[0], 0) && xy.Equal(p1, 0, e.pts[1], 0) {
+		if xy.Equal(p0, 0, e.pts, 0) && xy.Equal(p1, 0, e.pts, e.layout.Stride()) {
 			return e, true
 		}
 	}
@@ -127,11 +139,11 @@ func (pg *PlanarGraph) findEdge(p0, p1 geom.Coord) (edge *Edge, has bool) {
 // findEdgeInSameDirection finds the edge which starts at p0 and whose first segment is parallel to p1
 func (pg *PlanarGraph) findEdgeInSameDirection(p0, p1 geom.Coord) (edge *Edge, has bool) {
 	for _, e := range pg.edges {
-		if pg.matchInSameDirection(p0, p1, e.pts[0], e.pts[1]) {
+		if pg.matchInSameDirection(p0, p1, e.Coord(0), e.Coord(1)) {
 			return e, true
 		}
 
-		if pg.matchInSameDirection(p0, p1, e.pts[len(e.pts)-1], e.pts[len(e.pts)-2]) {
+		if pg.matchInSameDirection(p0, p1, e.Coord(e.NumCoords() - 1), e.Coord(e.NumCoords() - 2)) {
 			return e, true
 		}
 	}

@@ -8,15 +8,23 @@ import (
 	"github.com/twpayne/go-geom/xy/location"
 )
 
+func determineBoundaryLocation(boundaryNodeRule boundary.NodeRule, boundaryCount int) location.Type {
+	if boundaryNodeRule.IsInBoundary(boundaryCount) {
+		return location.Boundary
+	}
+
+	return location.Interior
+}
+
 // GeometryGraph is a graph that models a given Geometry
 type GeometryGraph struct {
 	PlanarGraph
 	parentGeom                   geom.T
-	lineEdgeMap                  map[*geom.LineString]Edge
+	lineEdgeMap                  map[*geom.LineString]*Edge
 	boundaryNodeRule             boundary.NodeRule
 	useBoundaryDeterminationRule bool
 	argIndex                     int
-	boundaryNodes                []Node
+	boundaryNodes                []*Node
 	hasTooFewPoints              bool
 	invalidPoint                 geom.Coord
 }
@@ -28,14 +36,14 @@ func NewGeometryGraphFromGeometry(argIndex int, parentGeom geom.T) *GeometryGrap
 func NewGeometryGraphFromGeometryAndBoundaryRule(argIndex int, parentGeom geom.T, boundaryNodeRule boundary.NodeRule) *GeometryGraph {
 	graph := &GeometryGraph{
 		PlanarGraph: PlanarGraph{
-			nodes: NewNodeMap(DefaultNodeFactory{}),
+			nodes: newNodeMap(DefaultNodeFactory{}),
 		},
 		argIndex:         argIndex,
 		boundaryNodeRule: boundaryNodeRule,
 	}
 
 	if parentGeom != nil {
-		graph.addGeomtry(parentGeom)
+		graph.addGeometry(parentGeom)
 	}
 
 	return graph
@@ -51,8 +59,8 @@ func (gg *GeometryGraph) getEdges() []*Edge {
 	return edges
 }
 
-func (gg GeometryGraph) createEdgeSetIntersector() EdgeSetIntersector {
-	return SimpleMCSweepLineIntersector{}
+func (gg GeometryGraph) createEdgeSetIntersector() edgeSetIntersector {
+	return &simpleMCSweepLineIntersector{}
 }
 
 func (gg *GeometryGraph) addGeometry(g geom.T) {
@@ -61,24 +69,24 @@ func (gg *GeometryGraph) addGeometry(g geom.T) {
 	}
 
 	switch typedGeom := g.(type) {
-	case geom.Polygon:
+	case *geom.Polygon:
 		gg.addPolygon(typedGeom)
-	case geom.LineString:
+	case *geom.LineString:
 		gg.addLineString(typedGeom)
-	case geom.LinearRing:
-		gg.addLineString(typedGeom)
-	case geom.Point:
+	case *geom.LinearRing:
+		gg.addLineString(geom.NewLineStringFlat(typedGeom.Layout(), typedGeom.FlatCoords()))
+	case *geom.Point:
 		gg.addPoint(typedGeom)
-	case geom.MultiPolygon:
+	case *geom.MultiPolygon:
 		gg.useBoundaryDeterminationRule = false
 		for i := 0; i < typedGeom.NumPolygons(); i++ {
 			gg.addPolygon(typedGeom.Polygon(i))
 		}
-	case geom.MultiLineString:
+	case *geom.MultiLineString:
 		for i := 0; i < typedGeom.NumLineStrings(); i++ {
 			gg.addLineString(typedGeom.LineString(i))
 		}
-	case geom.MultiPoint:
+	case *geom.MultiPoint:
 		for i := 0; i < typedGeom.NumPoints(); i++ {
 			gg.addPoint(typedGeom.Point(i))
 		}
@@ -87,7 +95,7 @@ func (gg *GeometryGraph) addGeometry(g geom.T) {
 	}
 }
 
-func (gg *GeometryGraph) addPoint(p geom.Point) {
+func (gg *GeometryGraph) addPoint(p *geom.Point) {
 	gg.insertPoint(gg.argIndex, p.FlatCoords(), location.Interior)
 }
 
@@ -96,15 +104,17 @@ func (gg *GeometryGraph) addPoint(p geom.Point) {
 // The left and right topological location arguments assume that the ring is oriented CW.
 // If the ring is in the opposite orientation,
 // the left and right locations must be interchanged.
-func (gg *GeometryGraph) addPolygonRing(lr geom.LinearRing, cwLeft, cwRight location.Type) {
+func (gg *GeometryGraph) addPolygonRing(lr *geom.LinearRing, cwLeft, cwRight location.Type) {
+	line := geom.NewLineStringFlat(lr.Layout(), lr.FlatCoords())
+
 	// don't bother adding empty holes
-	if len(lr.FlatCoords) == 0 {
+	if len(line.FlatCoords()) == 0 {
 		return
 	}
 
-	coords := transform.UniqueCoords(lr.Layout(), transform.XYCoordCompare{}, lr.FlatCoords())
+	coords := transform.UniqueCoords(line.Layout(), transform.XYCoordCompare{}, line.FlatCoords())
 
-	if len(coords) < (4 * lr.Layout().Stride()) {
+	if len(coords) < (4 * line.Layout().Stride()) {
 		gg.hasTooFewPoints = true
 		gg.invalidPoint = geom.Coord(coords[:2])
 		return
@@ -112,19 +122,19 @@ func (gg *GeometryGraph) addPolygonRing(lr geom.LinearRing, cwLeft, cwRight loca
 
 	left := cwLeft
 	right := cwRight
-	if xy.IsRingCounterClockwise(lr.Layout(), coords) {
+	if xy.IsRingCounterClockwise(line.Layout(), coords) {
 		left = cwRight
 		right = cwLeft
 	}
-	e := NewEdge(coords, NewLabel(gg.argIndex, location.Boundary, left, right))
-	gg.lineEdgeMap[lr] = e
+	e := NewEdge(line.Layout(), coords, NewLabel(gg.argIndex, location.Boundary, left, right))
+	gg.lineEdgeMap[line] = e
 
 	gg.insertEdge(e)
 	// insert the endpoint as a node, to mark that it is on the boundary
 	gg.insertPoint(gg.argIndex, coords[:2], location.Boundary)
 }
 
-func (gg *GeometryGraph) addPolygon(p geom.Polygon) {
+func (gg *GeometryGraph) addPolygon(p *geom.Polygon) {
 	gg.addPolygonRing(p.LinearRing(0), location.Exterior, location.Interior)
 
 	for i := 1; i < p.NumLinearRings(); i++ {
@@ -137,13 +147,13 @@ func (gg *GeometryGraph) addPolygon(p geom.Polygon) {
 	}
 }
 
-func (gg *GeometryGraph) addLineString(line geom.LineString) {
+func (gg *GeometryGraph) addLineString(line *geom.LineString) {
 	coord := transform.UniqueCoords(line.Layout(), transform.XYCoordCompare{}, line.FlatCoords())
 	stride := line.Layout().Stride()
 
 	if len(coord) < (2 * stride) {
 		gg.hasTooFewPoints = true
-		gg.invalidPoint = coord[0]
+		gg.invalidPoint = geom.Coord(coord[0:stride])
 		return
 	}
 
@@ -151,7 +161,7 @@ func (gg *GeometryGraph) addLineString(line geom.LineString) {
 	// line edges do not have locations for their left and right sides
 	label := NewNullLabel()
 	label[gg.argIndex][ON] = location.Interior
-	e := NewEdge(coord, label)
+	e := NewEdge(line.Layout(), coord, label)
 	gg.lineEdgeMap[line] = e
 	gg.insertEdge(e)
 	/**
@@ -163,20 +173,20 @@ func (gg *GeometryGraph) addLineString(line geom.LineString) {
 		panic("found LineString with single point")
 	}
 	gg.insertBoundaryPoint(gg.argIndex, coord[:2])
-	gg.insertBoundaryPoint(gg.argIndex, coord[len(coord)-stride:])
+	gg.insertBoundaryPoint(gg.argIndex, coord[len(coord) - stride:])
 }
 
 // addEdge adds an Edge computed externally.  The label on the Edge is assumed to be correct.
-func (gg *GeometryGraph) AddEdge(layout geom.Layout, e Edge) {
+func (gg *GeometryGraph) AddEdge(layout geom.Layout, e *Edge) {
 	gg.insertEdge(e)
-	coord := e.pts
+	stride := e.layout.Stride()
 	// insert the endpoint as a node, to mark that it is on the boundary
-	gg.insertPoint(gg.argIndex, coord[:2], location.Boundary)
-	gg.insertPoint(gg.argIndex, coord[len(coord)-layout.Stride():], location.Boundary)
+	gg.insertPoint(gg.argIndex, geom.Coord(e.pts[0:stride]), location.Boundary)
+	gg.insertPoint(gg.argIndex, e.pts[len(e.pts) - stride:], location.Boundary)
 }
 
 func (gg *GeometryGraph) addCoord(p geom.Coord) {
-	gg.insertPoint(gg.argIndex, float64(p), location.Interior)
+	gg.insertPoint(gg.argIndex, p, location.Interior)
 }
 
 func (gg *GeometryGraph) computeSelfNodes(computeRingSelfNodes bool) SegmentIntersector {
@@ -184,14 +194,14 @@ func (gg *GeometryGraph) computeSelfNodes(computeRingSelfNodes bool) SegmentInte
 	esi := gg.createEdgeSetIntersector()
 	// optimized test for Polygons and Rings
 	switch gg.parentGeom.(type) {
-	case geom.LinearRing:
-		esi.computeIntersections(gg.getEdges(gg), si, false)
-	case geom.Polygon:
-		esi.computeIntersections(gg.getEdges(gg), si, false)
-	case geom.MultiPolygon:
-		esi.computeIntersections(gg.getEdges(gg), si, false)
+	case *geom.LinearRing:
+		esi.computeIntersections(gg.getEdges(), si, false)
+	case *geom.Polygon:
+		esi.computeIntersections(gg.getEdges(), si, false)
+	case *geom.MultiPolygon:
+		esi.computeIntersections(gg.getEdges(), si, false)
 	default:
-		esi.computeIntersections(gg.getEdges(gg), si, true)
+		esi.computeIntersections(gg.getEdges(), si, true)
 	}
 
 	gg.addSelfIntersectionNodes(gg.argIndex)
@@ -200,16 +210,17 @@ func (gg *GeometryGraph) computeSelfNodes(computeRingSelfNodes bool) SegmentInte
 
 func (gg *GeometryGraph) computeEdgeIntersections(g *GeometryGraph, includeProper bool) SegmentIntersector {
 	si := SegmentIntersector{includeProper: includeProper, recordIsolated: true}
-	si.setBoundaryNodes(gg.boundaryNodes, g.boundaryNodes)
+	si.bdyNodes[0] = gg.boundaryNodes
+	si.bdyNodes[1] = gg.boundaryNodes
 
 	esi := gg.createEdgeSetIntersector()
-	esi.computeIntersections(gg.getEdges(), g.getEdges(), si)
+	esi.computeIntersectionsForEdges(gg.getEdges(), g.getEdges(), si)
 
 	return si
 }
 
-func (gg *GeometryGraph) insertPoint(argIndex int, coord geom.Coord, onLocation int) {
-	n := gg.nodes.addNode(coord)
+func (gg *GeometryGraph) insertPoint(argIndex int, coord geom.Coord, onLocation location.Type) {
+	n := gg.nodes.addCoordNode(coord)
 	lbl := n.label
 	if lbl == nil {
 		n.label = NewNullLabel()
@@ -222,7 +233,7 @@ func (gg *GeometryGraph) insertPoint(argIndex int, coord geom.Coord, onLocation 
 // insertBoundaryPoint Adds candidate boundary points using the current boundary.NodeRule
 // This is used to add the boundary points of dim-1 geometries (Curves/MultiCurves).
 func (gg *GeometryGraph) insertBoundaryPoint(argIndex int, coord geom.Coord) {
-	n := gg.nodes.addNode(coord)
+	n := gg.nodes.addCoordNode(coord)
 	// nodes always have labels
 	lbl := n.label
 	// the new point to insert is on a boundary
@@ -234,7 +245,7 @@ func (gg *GeometryGraph) insertBoundaryPoint(argIndex int, coord geom.Coord) {
 	}
 
 	// determine the boundary status of the point according to the Boundary Determination Rule
-	newLoc := gg.determineBoundary(gg.boundaryNodeRule, boundaryCount)
+	newLoc := determineBoundaryLocation(gg.boundaryNodeRule, boundaryCount)
 	lbl[argIndex][ON] = newLoc
 }
 
@@ -266,12 +277,5 @@ func (gg *GeometryGraph) addSelfIntersectionNode(argIndex int, coord geom.Coord,
 
 // locate Determines the location.Type of the given geom.Coord in this geometry.
 func (gg *GeometryGraph) locate(pt geom.Coord) location.Type {
-	switch typed := gg.parentGeom.(type) {
-	case geom.Polygon:
-		if typed.NumLinearRings() > 50 {
-			return xy.LocatePointInGeom(pt, gg.parentGeom)
-
-		}
-	}
-	return gg.ptLocator.locate(pt, parentGeom)
+	return xy.LocatePointOnGeomSFSBoundaryRun(pt, gg.parentGeom)
 }

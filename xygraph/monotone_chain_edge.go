@@ -2,60 +2,63 @@ package xygraph
 
 import "github.com/twpayne/go-geom"
 
-type MonotoneChainEdge struct {
+type monotoneChainEdge struct {
 	e          *Edge
-	pts        []geom.Coord
+	pts        []float64
 	startIndex []int
-	env1, env2 geom.Bounds
+	env1, env2 *geom.Bounds
 }
 
-func newMonotoneChainEdge(e *Edge) *MonotoneChainEdge {
-	return &MonotoneChainEdge{
+func newMonotoneChainEdge(e *Edge) *monotoneChainEdge {
+	return &monotoneChainEdge{
 		e:          e,
 		pts:        e.pts,
-		startIndex: getChainStartIndices(e.pts),
+		startIndex: getChainStartIndices(e.layout, e.pts),
 	}
 }
 
-func (mce *MonotoneChainEdge) MinX(chainIndex int) float64 {
-	x1 := mce.pts[mce.startIndex[chainIndex]][0]
-	x2 := mce.pts[mce.startIndex[chainIndex+1]][0]
+func (mce *monotoneChainEdge) minX(chainIndex int) float64 {
+	x1 := mce.pts[mce.startIndex[chainIndex]]
+	x2 := mce.pts[mce.startIndex[chainIndex + mce.e.layout.Stride()]]
 	if x1 < x2 {
 		return x1
 	}
 	return x2
 }
 
-func (mce *MonotoneChainEdge) MaxX(chainIndex int) float64 {
-	x1 := mce.pts[mce.startIndex[chainIndex]][0]
-	x2 := mce.pts[mce.startIndex[chainIndex+1]][0]
+func (mce *monotoneChainEdge) maxX(chainIndex int) float64 {
+	x1 := mce.pts[mce.startIndex[chainIndex]]
+	x2 := mce.pts[mce.startIndex[chainIndex + mce.e.layout.Stride()]]
 	if x1 > x2 {
 		return x1
 	}
 	return x2
 }
-func (mce *MonotoneChainEdge) computeIntersectsForChain(chainIndex0 int, otherMCE MonotoneChainEdge, chainIndex1 int, si SegmentIntersector) {
+func (mce *monotoneChainEdge) computeIntersectsForChain(chainIndex0 int, otherMCE *monotoneChainEdge, chainIndex1 int, si SegmentIntersector) {
 	otherMCE.computeIntersectsForChainBounded(
-		mce.startIndex[chainIndex0], mce.startIndex[chainIndex0+1],
+		mce.startIndex[chainIndex0], mce.startIndex[chainIndex0 + mce.e.layout.Stride()],
 		otherMCE,
-		otherMCE.startIndex[chainIndex1], otherMCE.startIndex[chainIndex1+1],
+		otherMCE.startIndex[chainIndex1], otherMCE.startIndex[chainIndex1 + mce.e.layout.Stride()],
 		si)
 }
-func (mce *MonotoneChainEdge) computeIntersectsForChainBounded(start0, end0 int, otherMCE MonotoneChainEdge, start1, end1 int, ei SegmentIntersector) {
-	p00 := mce.pts[start0]
-	p01 := mce.pts[end0]
-	p10 := otherMCE.pts[start1]
-	p11 := otherMCE.pts[end1]
+func (mce *monotoneChainEdge) computeIntersectsForChainBounded(start0, end0 int, otherMCE *monotoneChainEdge, start1, end1 int, ei SegmentIntersector) {
+	stride0 := mce.e.layout.Stride()
+	p00 := geom.Coord(mce.pts[start0: start0 + stride0])
+	p01 := geom.Coord(mce.pts[end0: end0 + stride0])
+
+	stride1 := otherMCE.e.layout.Stride()
+	p10 := geom.Coord(otherMCE.pts[start1 : start1 + stride1])
+	p11 := geom.Coord(otherMCE.pts[end1 : end1 + stride1])
 
 	// terminating condition for the recursion
-	if end0-start0 == 1 && end1-start1 == 1 {
+	if end0 - start0 == mce.e.layout.Stride() && end1 - start1 == mce.e.layout.Stride() {
 		ei.addIntersections(mce.e, start0, otherMCE.e, start1)
 		return
 	}
 	// nothing to do if the envelopes of these chains don't overlap
 	mce.env1.SetCoords(p00, p01)
 	mce.env2.SetCoords(p10, p11)
-	if !mce.env1.Overlaps(mce.env2) {
+	if !mce.env1.Overlaps(geom.XY, mce.env2) {
 		return
 	}
 
@@ -83,15 +86,16 @@ func (mce *MonotoneChainEdge) computeIntersectsForChainBounded(start0, end0 int,
 	}
 }
 
-func getChainStartIndices(pts []geom.Coord) []int {
+func getChainStartIndices(layout geom.Layout, pts []float64) []int {
+	stride := layout.Stride()
 	// find the startpoint (and endpoints) of all monotone chains in this edge
 	start := 0
 	startIndexList := []int{start}
 	for {
-		last := findChainEnd(pts, start)
+		last := findChainEnd(stride, pts, start)
 		startIndexList = append(startIndexList, last)
 		start = last
-		if !(start < len(pts)-1) {
+		if !(start < len(pts) - stride) {
 			break
 		}
 	}
@@ -99,17 +103,17 @@ func getChainStartIndices(pts []geom.Coord) []int {
 	return startIndexList
 }
 
-func findChainEnd(pts []geom.Coord, start int) int {
+func findChainEnd(stride int, pts []float64, start int) int {
 	// determine quadrant for chain
-	chainQuad := coordsQuadrant(pts[start], pts[start+1])
-	last := start + 1
+	chainQuad := coordsQuadrant(geom.Coord(pts[start:start + stride]), geom.Coord(pts[start + stride:start + stride + stride]))
+	last := start + stride
 	for last < len(pts) {
 		// compute quadrant for next possible segment in chain
-		quad := coordsQuadrant(pts[last-1], pts[last])
+		quad := coordsQuadrant(geom.Coord(pts[last - stride : last]), geom.Coord(pts[last:last + stride]))
 		if quad != chainQuad {
 			break
 		}
-		last++
+		last += stride
 	}
-	return last - 1
+	return last - stride
 }

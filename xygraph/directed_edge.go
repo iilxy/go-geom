@@ -5,39 +5,42 @@ import (
 	"github.com/twpayne/go-geom/xy/location"
 )
 
-type DirectedEdge struct {
-	EdgeEndCommon
+type directedEdge struct {
+	edgeEndCommon
 
 	isForward, isInResult, isVisited bool
 	sym,
 	// the next edge in the edge ring for the polygon containing this edge
 	next,
 	// the next edge in the MinimalEdgeRing that contains this edge
-	nextMin *DirectedEdge
+	nextMin *directedEdge
 	// the EdgeRing that this edge is part of
 	edgeRing,
 	// the MinimalEdgeRing that this edge is part of
-	minEdgeRing *EdgeRing
+	minEdgeRing *edgeRing
 	// The depth of each side (position) of this edge.
 	//  The 0 element of the array is never used.
 	depth [3]int
 }
 
-var _ EdgeEnd = &DirectedEdge{}
+var _ edgeEnd = &directedEdge{}
 
-func NewDirectedEdge(edge *Edge, isForward bool) *DirectedEdge {
-	de := &DirectedEdge{
-		EdgeEndCommon: EdgeEndCommon{
+func newDirectedEdge(edge *Edge, isForward bool) *directedEdge {
+	de := &directedEdge{
+		edgeEndCommon: edgeEndCommon{
 			edge: edge,
 		},
 		depth:     [3]int{0, -999, -999},
 		isForward: isForward,
 	}
+
+	stride := edge.layout.Stride()
+	doubleStride := stride*2
 	if isForward {
-		de.init(edge.pts[0], edge.pts[1])
+		de.init(edge.pts[:stride], edge.pts[stride:doubleStride])
 	} else {
-		n := len(edge.pts) - 1
-		de.init(edge.pts[n], edge.pts[n-1])
+		idx := len(edge.pts) - stride
+		de.init(edge.pts[idx:], edge.pts[idx -stride:idx])
 	}
 	de.computeDirectedLabel()
 
@@ -57,7 +60,7 @@ func depthFactor(currLocation, nextLocation location.Type) int {
 	}
 }
 
-func (de *DirectedEdge) setDepth(pos position, depthVal int) {
+func (de *directedEdge) setDepth(pos position, depthVal int) {
 	if de.depth[pos] != -999 {
 		if de.depth[pos] != depthVal {
 			panic(fmt.Sprintf("assigned depths do not match: %v", de.p0))
@@ -66,7 +69,7 @@ func (de *DirectedEdge) setDepth(pos position, depthVal int) {
 	de.depth[pos] = depthVal
 }
 
-func (de *DirectedEdge) getDepthDelta() int {
+func (de *directedEdge) getDepthDelta() int {
 	depthDelta := de.edge.depthDelta
 	if !de.isForward {
 		depthDelta = -depthDelta
@@ -76,7 +79,7 @@ func (de *DirectedEdge) getDepthDelta() int {
 
 // setVisitedEdge marks both DirectedEdges attached to a given Edge.
 // This is used for edges corresponding to lines, which will only appear oriented in a single direction in the result.
-func (de *DirectedEdge) setVisitedEdge(isVisited bool) {
+func (de *directedEdge) setVisitedEdge(isVisited bool) {
 	de.isVisited = isVisited
 	de.sym.isVisited = isVisited
 }
@@ -84,7 +87,7 @@ func (de *DirectedEdge) setVisitedEdge(isVisited bool) {
 // isLineEdge determines if this edige is a line edge.  This edge is a line edge if
 //  * at least one of the labels is a line label
 //  * any labels which are not line labels have all Locations = EXTERIOR
-func (de *DirectedEdge) isLineEdge() bool {
+func (de *directedEdge) isLineEdge() bool {
 	isLine := de.label[0].isLine() || de.label[1].isLine()
 	isExteriorIfArea0 := !de.label[0].isArea() || de.label[0].allPositionsEqual(location.Exterior)
 	isExteriorIfArea1 := !de.label[1].isArea() || de.label[1].allPositionsEqual(location.Exterior)
@@ -95,7 +98,7 @@ func (de *DirectedEdge) isLineEdge() bool {
 // This is an interior Area edge if
 //  * its label is an Area label for both Geometries
 //  * and for each Geometry both sides are in the interior.
-func (de *DirectedEdge) isInteriorAreaEdge() bool {
+func (de *directedEdge) isInteriorAreaEdge() bool {
 	isInteriorAreaEdge := true
 	for i := 0; i < 2; i++ {
 		if !(de.label[i].isArea() && de.label[i][LEFT] == location.Interior && de.label[i][RIGHT] == location.Interior) {
@@ -106,16 +109,19 @@ func (de *DirectedEdge) isInteriorAreaEdge() bool {
 }
 
 // Compute the label in the appropriate orientation for this DirEdge
-func (de *DirectedEdge) computeDirectedLabel() {
-	de.label = NewLabelFromTemplate(de.edge.label)
-	if !de.isForward {
-		de.label.flip()
+func (de *directedEdge) computeDirectedLabel() {
+	if de.edge.label != nil {
+		de.label = NewLabelFromTemplate(de.edge.label)
+
+		if !de.isForward {
+			de.label.flip()
+		}
 	}
 }
 
 // setEdgeDepths sets both edge depths.  One depth for a given side is provided.  The other is
 // computed depending on the Location transition and the depthDelta of the edge.
-func (de *DirectedEdge) setEdgeDepths(pos position, depth int) {
+func (de *directedEdge) setEdgeDepths(pos position, depth int) {
 	// get the depth transition delta from R to L for this directed Edge
 	depthDelta := de.edge.depthDelta
 	if !de.isForward {
@@ -136,8 +142,8 @@ func (de *DirectedEdge) setEdgeDepths(pos position, depth int) {
 	de.setDepth(oppositePos, oppositeDepth)
 }
 
-func (de *DirectedEdge) String() string {
-	s := fmt.Sprintf("%v %v/%v (%v) ", de.EdgeEndCommon.String(), de.depth[LEFT], de.depth[RIGHT], de.getDepthDelta())
+func (de *directedEdge) String() string {
+	s := fmt.Sprintf("%v %v/%v (%v) ", de.edgeEndCommon.String(), de.depth[LEFT], de.depth[RIGHT], de.getDepthDelta())
 
 	if de.isInResult {
 		s = s + " inResult"

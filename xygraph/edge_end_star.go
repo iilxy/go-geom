@@ -10,60 +10,60 @@ import (
 	"github.com/twpayne/go-geom/xy/location"
 )
 
-type EdgeEndStar interface {
-	insert(e EdgeEnd)
-	insertEdgeEnd(e EdgeEnd, obj interface{})
-	Coordinate() geom.Coord
+type edgeEndStar interface {
+	insert(e edgeEnd)
+	insertEdgeEnd(e edgeEnd, obj interface{})
+	coordinate() geom.Coord
 	degree() int
-	NextCW(e EdgeEnd) EdgeEnd
+	nextCW(e edgeEnd) edgeEnd
 	computeLabelling(geomGraph []GeometryGraph)
 	isAreaLabelsConsistent(geomGraph *GeometryGraph) (bool, error)
-	findIndex(eSearch EdgeEnd) int
-	Iterate(func(edge EdgeEnd) bool)
+	findIndex(eSearch edgeEnd) int
+	iterate(func(edge edgeEnd) bool)
 }
-type EdgeEndStarCommon struct {
+type edgeEndStarCommon struct {
 	edgeMap          *transform.TreeMap
 	ptInAreaLocation [2]location.Type
 }
 
-var _ EdgeEndStar = &EdgeEndStarCommon{}
+var _ edgeEndStar = &edgeEndStarCommon{}
 
-func NewEdgeEndStarCommon() *EdgeEndStarCommon {
-	return &EdgeEndStarCommon{
+func newEdgeEndStarCommon() *edgeEndStarCommon {
+	return &edgeEndStarCommon{
 		ptInAreaLocation: [2]location.Type{location.None, location.None},
 		edgeMap:          transform.NewTreeMap(EdgeEndCompare{}),
 	}
 }
-func (ees *EdgeEndStarCommon) Iterate(iterFunc func(edge EdgeEnd) bool) {
+func (ees *edgeEndStarCommon) iterate(iterFunc func(edge edgeEnd) bool) {
 	ees.edgeMap.WalkInterruptible(func(key, value interface{}) bool {
-		return iterFunc(value.(EdgeEnd))
+		return iterFunc(value.(edgeEnd))
 	})
 }
-func (ees *EdgeEndStarCommon) insert(e EdgeEnd) {
-	ees.insertEdgeEnd(e, e.(*DirectedEdge))
+func (ees *edgeEndStarCommon) insert(e edgeEnd) {
+	ees.insertEdgeEnd(e, e.(*directedEdge))
 }
-func (ees *EdgeEndStarCommon) insertEdgeEnd(e EdgeEnd, obj interface{}) {
+func (ees *edgeEndStarCommon) insertEdgeEnd(e edgeEnd, obj interface{}) {
 	ees.edgeMap.Insert(e, obj)
 }
 
-func (ees *EdgeEndStarCommon) Coordinate() geom.Coord {
-	var e EdgeEnd = nil
+func (ees *edgeEndStarCommon) coordinate() geom.Coord {
+	var e edgeEnd = nil
 
 	ees.edgeMap.WalkInterruptible(func(key, value interface{}) bool {
-		e = value.(EdgeEnd)
+		e = value.(edgeEnd)
 		return false
 	})
 
 	if e == nil {
 		return nil
 	}
-	return e.Coordinate()
+	return e.getCoord()
 }
 
-func (ees *EdgeEndStarCommon) degree() int {
+func (ees *edgeEndStarCommon) degree() int {
 	return ees.edgeMap.Size()
 }
-func (ees *EdgeEndStarCommon) NextCW(ee EdgeEnd) EdgeEnd {
+func (ees *edgeEndStarCommon) nextCW(ee edgeEnd) edgeEnd {
 	i := ees.findIndex(ee)
 	iNextCW := i - 1
 	if i == 0 {
@@ -73,13 +73,13 @@ func (ees *EdgeEndStarCommon) NextCW(ee EdgeEnd) EdgeEnd {
 	return ees.getEdgeEnd(iNextCW)
 }
 
-func (ees *EdgeEndStarCommon) getEdgeEnd(index int) EdgeEnd {
-	var ee EdgeEnd = nil
+func (ees *edgeEndStarCommon) getEdgeEnd(index int) edgeEnd {
+	var ee edgeEnd = nil
 	i := 0
 	ees.edgeMap.WalkInterruptible(func(key, value interface{}) bool {
 
 		if index == i {
-			ee = value.(EdgeEnd)
+			ee = value.(edgeEnd)
 			return false
 		}
 		i++
@@ -88,7 +88,7 @@ func (ees *EdgeEndStarCommon) getEdgeEnd(index int) EdgeEnd {
 
 	return ee
 }
-func (ees *EdgeEndStarCommon) computeLabelling(geomGraph []GeometryGraph) {
+func (ees *edgeEndStarCommon) computeLabelling(geomGraph []GeometryGraph) {
 	ees.computeEdgeEndLabels(geomGraph[0].boundaryNodeRule)
 	// Propagate side labels  around the edges in the star
 	// for each parent Geometry
@@ -125,8 +125,8 @@ func (ees *EdgeEndStarCommon) computeLabelling(geomGraph []GeometryGraph) {
 	hasDimensionalCollapseEdge := []bool{false, false}
 
 	ees.edgeMap.Walk(func(key, value interface{}) {
-		e := value.(EdgeEnd)
-		label := e.Label()
+		e := value.(edgeEnd)
+		label := e.getLabel()
 		for geomi := 0; geomi < 2; geomi++ {
 			if label[geomi].isLine() && label[geomi][ON] == location.Boundary {
 				hasDimensionalCollapseEdge[geomi] = true
@@ -135,8 +135,8 @@ func (ees *EdgeEndStarCommon) computeLabelling(geomGraph []GeometryGraph) {
 	})
 
 	ees.edgeMap.Walk(func(key, value interface{}) {
-		e := value.(EdgeEnd)
-		label := e.Label()
+		e := value.(edgeEnd)
+		label := e.getLabel()
 
 		for geomi := 0; geomi < 2; geomi++ {
 			if label[geomi].isNull() {
@@ -144,7 +144,7 @@ func (ees *EdgeEndStarCommon) computeLabelling(geomGraph []GeometryGraph) {
 				if hasDimensionalCollapseEdge[geomi] {
 					loc = location.Exterior
 				} else {
-					p := e.Coordinate()
+					p := e.getCoord()
 					loc = ees.getLocation(geomi, p, geomGraph)
 				}
 				label[geomi].setAllLocationsIfNull(loc)
@@ -152,27 +152,27 @@ func (ees *EdgeEndStarCommon) computeLabelling(geomGraph []GeometryGraph) {
 		}
 	})
 }
-func (ees *EdgeEndStarCommon) computeEdgeEndLabels(boundaryNodeRule boundary.NodeRule) {
+func (ees *edgeEndStarCommon) computeEdgeEndLabels(boundaryNodeRule boundary.NodeRule) {
 	// Compute edge label for each EdgeEnd
 	ees.edgeMap.Walk(func(key, value interface{}) {
-		ee := value.(EdgeEnd)
+		ee := value.(edgeEnd)
 		ee.computeLabel(boundaryNodeRule)
 	})
 }
 
-func (ees *EdgeEndStarCommon) getLocation(geomIndex int, p geom.Coord, geom []GeometryGraph) location.Type {
+func (ees *edgeEndStarCommon) getLocation(geomIndex int, p geom.Coord, geom []GeometryGraph) location.Type {
 	// compute location only on demand
 	if ees.ptInAreaLocation[geomIndex] == location.None {
-		ees.ptInAreaLocation[geomIndex] = xy.LocatePointInGeom(p, geom[geomIndex].parentGeom)
+		ees.ptInAreaLocation[geomIndex] = xy.LocatePointOnGeomSFSBoundaryRun(p, geom[geomIndex].parentGeom)
 	}
 	return ees.ptInAreaLocation[geomIndex]
 }
-func (ees *EdgeEndStarCommon) isAreaLabelsConsistent(geomGraph *GeometryGraph) (bool, error) {
+func (ees *edgeEndStarCommon) isAreaLabelsConsistent(geomGraph *GeometryGraph) (bool, error) {
 	ees.computeEdgeEndLabels(geomGraph.boundaryNodeRule)
 	return ees.checkAreaLabelsConsistent(0)
 }
 
-func (ees *EdgeEndStarCommon) checkAreaLabelsConsistent(geomIndex int) (bool, error) {
+func (ees *edgeEndStarCommon) checkAreaLabelsConsistent(geomIndex int) (bool, error) {
 	// Since edges are stored in CCW order around the node,
 	// As we move around the ring we move from the right to the left side of the edge
 
@@ -183,7 +183,7 @@ func (ees *EdgeEndStarCommon) checkAreaLabelsConsistent(geomIndex int) (bool, er
 
 	// initialize startLoc to location of last L side (if any)
 	lastEdgeIndex := ees.edgeMap.Size() - 1
-	startLabel := ees.getEdgeEnd(lastEdgeIndex).Label()
+	startLabel := ees.getEdgeEnd(lastEdgeIndex).getLabel()
 	startLoc := startLabel[geomIndex][LEFT]
 
 	if startLoc == location.None {
@@ -195,8 +195,8 @@ func (ees *EdgeEndStarCommon) checkAreaLabelsConsistent(geomIndex int) (bool, er
 
 	var err error = nil
 	ees.edgeMap.WalkInterruptible(func(key, value interface{}) bool {
-		e := value.(EdgeEnd)
-		label := e.Label()
+		e := value.(edgeEnd)
+		label := e.getLabel()
 		// we assume that we are only checking a area
 		if label[geomIndex].isArea() {
 			err = fmt.Errorf("Found non-area edge")
@@ -221,7 +221,7 @@ func (ees *EdgeEndStarCommon) checkAreaLabelsConsistent(geomIndex int) (bool, er
 
 	return found, err
 }
-func (ees *EdgeEndStarCommon) propagateSideLabels(geomIndex int) error {
+func (ees *edgeEndStarCommon) propagateSideLabels(geomIndex int) error {
 	// Since edges are stored in CCW order around the node,
 	// As we move around the ring we move from the right to the left side of the edge
 	startLoc := location.None
@@ -229,8 +229,8 @@ func (ees *EdgeEndStarCommon) propagateSideLabels(geomIndex int) error {
 	// initialize loc to location of last L side (if any)
 	//System.out.println("finding start location");
 	ees.edgeMap.Walk(func(key, value interface{}) {
-		e := value.(EdgeEnd)
-		label := e.Label()
+		e := value.(edgeEnd)
+		label := e.getLabel()
 		if label[geomIndex].isArea() && label[geomIndex][LEFT] != location.None {
 			startLoc = label[geomIndex][LEFT]
 		}
@@ -244,8 +244,8 @@ func (ees *EdgeEndStarCommon) propagateSideLabels(geomIndex int) error {
 	currLoc := startLoc
 	var err error = nil
 	ees.edgeMap.Walk(func(key, value interface{}) {
-		e := value.(EdgeEnd)
-		label := e.Label()
+		e := value.(edgeEnd)
+		label := e.getLabel()
 		// set null ON values to be in current location
 		if label[geomIndex][ON] == location.None {
 			label[geomIndex][ON] = currLoc
@@ -257,11 +257,11 @@ func (ees *EdgeEndStarCommon) propagateSideLabels(geomIndex int) error {
 			// if there is a right location, that is the next location to propagate
 			if rightLoc != location.None {
 				if rightLoc != currLoc {
-					err = fmt.Errorf("side location conflict %v", e.Coordinate())
+					err = fmt.Errorf("side location conflict %v", e.getCoord())
 				}
 			}
 			if leftLoc == location.None {
-				err = fmt.Errorf("found single null side (at %v)", e.Coordinate())
+				err = fmt.Errorf("found single null side (at %v)", e.getCoord())
 			}
 			currLoc = leftLoc
 		} else {
@@ -282,7 +282,7 @@ func (ees *EdgeEndStarCommon) propagateSideLabels(geomIndex int) error {
 	return err
 }
 
-func (ees *EdgeEndStarCommon) findIndex(eSearch EdgeEnd) int {
+func (ees *edgeEndStarCommon) findIndex(eSearch edgeEnd) int {
 	found := false
 	i := 0
 	ees.edgeMap.WalkInterruptible(func(key, value interface{}) bool {
@@ -301,9 +301,9 @@ func (ees *EdgeEndStarCommon) findIndex(eSearch EdgeEnd) int {
 	return -1
 }
 
-func (ees *EdgeEndStarCommon) String() string {
+func (ees *edgeEndStarCommon) String() string {
 	buf := bytes.Buffer{}
-	buf.WriteString(fmt.Sprintf("EdgeEndStar: %v\n", ees.Coordinate()))
+	buf.WriteString(fmt.Sprintf("EdgeEndStar: %v\n", ees.coordinate()))
 
 	ees.edgeMap.Walk(func(key, e interface{}) {
 		buf.WriteString(fmt.Sprintf("%v\n", e))

@@ -4,7 +4,7 @@ import "github.com/twpayne/go-geom"
 
 type GraphComponent interface {
 	// Coordinate returns a coordinate in this component (or nil, if there are none)
-	Coordinate() geom.Coord
+	getCoord() geom.Coord
 	// computeIM computes the contribution to an IM for this component
 	computeIM(im IntersectionMatrix)
 	// isIsolated determins if the component is an isolated component.
@@ -13,7 +13,7 @@ type GraphComponent interface {
 	// only a single Geometry.
 	isIsolated() bool
 }
-type CommonGraphComponent struct {
+type commonGraphComponent struct {
 	label                                          *Label
 	isInResult, isCovered, isCoveredSet, isVisited bool
 }

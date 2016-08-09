@@ -5,7 +5,7 @@ import (
 	"github.com/twpayne/go-geom/xy/location"
 )
 
-type Label [2]TopologyLocation
+type Label [2]topologyLocation
 
 func NewLabel(geomIndex int, onLoc, leftLoc, rightLoc location.Type) *Label {
 	label := NewNullLabel()
@@ -16,21 +16,21 @@ func NewLabel(geomIndex int, onLoc, leftLoc, rightLoc location.Type) *Label {
 }
 func NewLabelFromTemplate(template *Label) *Label {
 	return &Label{
-		NewTopologyLocationFromTemplate(template[0]),
-		NewTopologyLocationFromTemplate(template[1]),
+		newTopologyLocationFromTemplate(template[0]),
+		newTopologyLocationFromTemplate(template[1]),
 	}
 }
 
 func NewHomogeneousLabel(loc location.Type) *Label {
 	return &Label{
-		NewOnTopologyLocation(loc),
-		NewOnTopologyLocation(loc),
+		newOnTopologyLocation(loc),
+		newOnTopologyLocation(loc),
 	}
 }
 func NewNullLabel() *Label {
 	return &Label{
-		NewOnTopologyLocation(location.None),
-		NewOnTopologyLocation(location.None),
+		newOnTopologyLocation(location.None),
+		newOnTopologyLocation(location.None),
 	}
 }
 
@@ -48,7 +48,7 @@ func (l *Label) setAllLocationsIfNull(loc location.Type) {
 func (l *Label) merge(lbl *Label) {
 	for i := 0; i < 2; i++ {
 		if l[i] == nil && lbl[i] != nil {
-			l[i] = NewOnTopologyLocation(lbl[i][ON])
+			l[i] = newOnTopologyLocation(lbl[i][ON])
 		} else {
 			l[i].merge(lbl[i])
 		}
@@ -76,7 +76,7 @@ func (l Label) isEqualOnSide(lbl Label, side int) bool {
 
 func (l *Label) toLine(geomIndex int) {
 	if l[geomIndex].isArea() {
-		l[geomIndex] = NewOnTopologyLocation(l[geomIndex][0])
+		l[geomIndex] = newOnTopologyLocation(l[geomIndex][0])
 	}
 }
 

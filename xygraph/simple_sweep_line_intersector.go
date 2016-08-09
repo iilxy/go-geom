@@ -1,15 +1,13 @@
 package xygraph
 
-import "github.com/twpayne/go-geom"
-
-type SimpleSweepLineIntersector struct {
+type simpleSweepLineIntersector struct {
 	nOverlaps int
 	events    []*SweepLineEvent
 }
 
-var _ EdgeSetIntersector = &SimpleSweepLineIntersector{}
+var _ edgeSetIntersector = &simpleSweepLineIntersector{}
 
-func (s *SimpleSweepLineIntersector) computeIntersections(edges []*Edge, si SegmentIntersector, testAllSegments bool) {
+func (s *simpleSweepLineIntersector) computeIntersections(edges []*Edge, si SegmentIntersector, testAllSegments bool) {
 	if testAllSegments {
 		s.addEdgeListToEdgeSet(edges, nil)
 	} else {
@@ -17,28 +15,28 @@ func (s *SimpleSweepLineIntersector) computeIntersections(edges []*Edge, si Segm
 	}
 	s.computeIntersectionsFromEvents(si)
 }
-func (s *SimpleSweepLineIntersector) computeIntersectionsForEdges(edges0, edges1 []*Edge, si SegmentIntersector) {
+func (s *simpleSweepLineIntersector) computeIntersectionsForEdges(edges0, edges1 []*Edge, si SegmentIntersector) {
 	s.addEdgeListToEdgeSet(edges0, edges0)
 	s.addEdgeListToEdgeSet(edges1, edges1)
 	s.computeIntersectionsFromEvents(si)
 }
 
-func (s *SimpleSweepLineIntersector) addEdges(edges []*Edge) {
+func (s *simpleSweepLineIntersector) addEdges(edges []*Edge) {
 	for _, edge := range edges {
 		// edge is its own group
 		s.addEdgeToEdgeSet(edge, edge)
 	}
 }
 
-func (s *SimpleSweepLineIntersector) addEdgeListToEdgeSet(edges []*Edge, edgeSet interface{}) {
+func (s *simpleSweepLineIntersector) addEdgeListToEdgeSet(edges []*Edge, edgeSet interface{}) {
 	for _, edge := range edges {
 		s.addEdgeToEdgeSet(edge, edgeSet)
 	}
 }
-func (s *SimpleSweepLineIntersector) addEdgeToEdgeSet(edge *Edge, edgeSet interface{}) {
+func (s *simpleSweepLineIntersector) addEdgeToEdgeSet(edge *Edge, edgeSet interface{}) {
 	pts := edge.pts
 
-	for i := 0; i < len(pts)-1; i++ {
+	for i := 0; i < len(pts) - 1; i++ {
 		ss := NewSweepLineSegment(edge, i)
 		insertEvent := NewSweepLineEvent(edgeSet, ss.MinX(), nil, ss)
 		s.events = append(s.events, insertEvent)
@@ -46,7 +44,7 @@ func (s *SimpleSweepLineIntersector) addEdgeToEdgeSet(edge *Edge, edgeSet interf
 	}
 }
 
-func (s *SimpleSweepLineIntersector) computeIntersectionsFromEvents(si SegmentIntersector) {
+func (s *simpleSweepLineIntersector) computeIntersectionsFromEvents(si SegmentIntersector) {
 	s.nOverlaps = 0
 	prepareEvents(s.events)
 
@@ -57,7 +55,7 @@ func (s *SimpleSweepLineIntersector) computeIntersectionsFromEvents(si SegmentIn
 	}
 }
 
-func (s *SimpleSweepLineIntersector) processOverlaps(start, end int, ev0 SweepLineEvent, si SegmentIntersector) {
+func (s *simpleSweepLineIntersector) processOverlaps(start, end int, ev0 *SweepLineEvent, si SegmentIntersector) {
 	ss0 := ev0.obj.(*SweepLineSegment)
 	/**
 	 * Since we might need to test for self-intersections,
@@ -78,7 +76,7 @@ func (s *SimpleSweepLineIntersector) processOverlaps(start, end int, ev0 SweepLi
 
 type SweepLineSegment struct {
 	edge    *Edge
-	pts     []geom.Coord
+	pts     []float64
 	ptIndex int
 }
 
@@ -91,8 +89,8 @@ func NewSweepLineSegment(edge *Edge, ptIndex int) *SweepLineSegment {
 }
 
 func (s *SweepLineSegment) MinX() float64 {
-	x1 := s.pts[s.ptIndex][0]
-	x2 := s.pts[s.ptIndex+1][0]
+	x1 := s.pts[s.ptIndex * s.edge.layout.Stride()]
+	x2 := s.pts[s.ptIndex * s.edge.layout.Stride() + s.edge.layout.Stride()]
 	if x1 < x2 {
 		return x1
 	}
@@ -100,14 +98,16 @@ func (s *SweepLineSegment) MinX() float64 {
 }
 
 func (s *SweepLineSegment) MaxX() float64 {
-	x1 := s.pts[s.ptIndex][0]
-	x2 := s.pts[s.ptIndex+1][0]
+	stride := s.edge.layout.Stride()
+	x1 := s.pts[s.ptIndex * stride]
+	x2 := s.pts[s.ptIndex * stride + stride]
+
 	if x1 > x2 {
 		return x1
 	}
 	return x2
 }
 
-func (s *SweepLineSegment) computeIntersections(ss SweepLineSegment, si SegmentIntersector) {
+func (s *SweepLineSegment) computeIntersections(ss *SweepLineSegment, si SegmentIntersector) {
 	si.addIntersections(s.edge, s.ptIndex, ss.edge, ss.ptIndex)
 }

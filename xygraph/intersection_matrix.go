@@ -55,27 +55,27 @@ func NewIntersectionMatrixFromTemplate(template IntersectionMatrix) *Intersectio
 	return im
 }
 
-// Adds one matrix to another.
+// Add adds one matrix to another.
 // Addition is defined by taking the maximum dimension value of each position
 // in the summand matrices.
-func (im *IntersectionMatrix) add(source IntersectionMatrix) {
+func (im *IntersectionMatrix) Add(source IntersectionMatrix) {
 	for i, a := range source {
 		for j, v := range a {
-			im.setAtLeast(i, j, v)
+			im.SetAtLeast(i, j, v)
 		}
 	}
 }
 
-// Tests if the dimension value matches dimension_TRUE (i.e.  has value 0, 1, 2 or TRUE).
-func (im *IntersectionMatrix) isTrue(actualDimensionValue dimension) bool {
+// IsTrue tests if the dimension value matches dimension_TRUE (i.e.  has value 0, 1, 2 or TRUE).
+func (im *IntersectionMatrix) IsTrue(actualDimensionValue dimension) bool {
 	if actualDimensionValue >= 0 || actualDimensionValue == dimTRUE {
 		return true
 	}
 	return false
 }
 
-// Tests if the dimension value satisfies the dimension symbol
-func (im *IntersectionMatrix) matches(actualDimensionValue dimension, requiredDimensionSymbol dimensionalSymbol) bool {
+// Matches tests if the dimension value satisfies the dimension symbol
+func (im *IntersectionMatrix) Matches(actualDimensionValue dimension, requiredDimensionSymbol dimensionalSymbol) bool {
 	switch {
 	case requiredDimensionSymbol == SYM_DONTCARE:
 		return true
@@ -94,10 +94,10 @@ func (im *IntersectionMatrix) matches(actualDimensionValue dimension, requiredDi
 	}
 }
 
-// set changes the elements of this IntersectionMatrix to the dimension symbols in dimensionSymbols.
+// Set changes the elements of this IntersectionMatrix to the dimension symbols in dimensionSymbols.
 // Param dimensionSymbols - nine dimension symbols to which to set this IntersectionMatrix s elements.
 // Possible values are T, F, * , 0, 1, 2
-func (im *IntersectionMatrix) set(dimensionSymbols string) {
+func (im *IntersectionMatrix) Set(dimensionSymbols string) {
 	for i, sym := range dimensionSymbols {
 		row := i / 3
 		col := i % 3
@@ -105,33 +105,33 @@ func (im *IntersectionMatrix) set(dimensionSymbols string) {
 	}
 }
 
-// setAtLeast changes the specified element to minimumDimensionValue if the element is less.
-func (im *IntersectionMatrix) setAtLeast(row, column int, minimumDimensionValue dimension) {
+// SetAtLeast changes the specified element to minimumDimensionValue if the element is less.
+func (im *IntersectionMatrix) SetAtLeast(row, column int, minimumDimensionValue dimension) {
 	if im[row][column] < minimumDimensionValue {
 		im[row][column] = minimumDimensionValue
 	}
 }
 
-// setAtLeastIfValid changes the specified element to minimumDimensionValue if the element is less.
+// SetAtLeastIfValid changes the specified element to minimumDimensionValue if the element is less.
 // Does nothing if row < 0 or column < 0.
-func (im *IntersectionMatrix) setAtLeastIfValid(row, column int, minimumDimensionValue dimension) {
+func (im *IntersectionMatrix) SetAtLeastIfValid(row, column int, minimumDimensionValue dimension) {
 	if row >= 0 && column >= 0 {
-		im.setAtLeast(row, column, minimumDimensionValue)
+		im.SetAtLeast(row, column, minimumDimensionValue)
 	}
 }
 
-// setAtLeastFromSymbols changes the element to the corresponding minimum dimension symbol if the element
+// SetAtLeastFromSymbols changes the element to the corresponding minimum dimension symbol if the element
 // is less for each element in this IntersectionMatrix
-func (im *IntersectionMatrix) setAtLeastFromSymbols(minimumDimensionSymbols string) {
+func (im *IntersectionMatrix) SetAtLeastFromSymbols(minimumDimensionSymbols string) {
 	for i, sym := range minimumDimensionSymbols {
 		row := i / 3
 		col := i % 3
-		im.setAtLeast(row, col, dimensionalSymbol(sym).toDimensionValue())
+		im.SetAtLeast(row, col, dimensionalSymbol(sym).toDimensionValue())
 	}
 }
 
-// setAll changes the elements of this IntersectionMatrix to dimensionValue
-func (im *IntersectionMatrix) setAll(dimensionValue dimension) {
+// SetAll changes the elements of this IntersectionMatrix to dimensionValue
+func (im *IntersectionMatrix) SetAll(dimensionValue dimension) {
 	for ai := 0; ai < 3; ai++ {
 		for bi := 0; bi < 3; bi++ {
 			im[ai][bi] = dimensionValue
@@ -139,33 +139,33 @@ func (im *IntersectionMatrix) setAll(dimensionValue dimension) {
 	}
 }
 
-// disjoint Returns true if this IntersectionMatrix is *  FF*FF****. (no itersections)
-func (im *IntersectionMatrix) disjoint() bool {
+// Disjoint Returns true if this IntersectionMatrix is *  FF*FF****. (no itersections)
+func (im *IntersectionMatrix) Disjoint() bool {
 	return im[location.Interior][location.Interior] == dimFALSE &&
 		im[location.Interior][location.Boundary] == dimFALSE &&
 		im[location.Boundary][location.Interior] == dimFALSE &&
 		im[location.Boundary][location.Boundary] == dimFALSE
 }
 
-// touches returns true if this IntersectionMatrix is FT*******, F**T***** or F***T****
-func (im *IntersectionMatrix) touches(dimensionOfGeometryA, dimensionOfGeometryB dimension) bool {
+// Touches returns true if this IntersectionMatrix is FT*******, F**T***** or F***T****
+func (im *IntersectionMatrix) Touches(dimensionOfGeometryA, dimensionOfGeometryB dimension) bool {
 	if dimensionOfGeometryA > dimensionOfGeometryB {
 		//no need to get transpose because pattern matrix is symmetrical
-		return im.touches(dimensionOfGeometryB, dimensionOfGeometryA)
+		return im.Touches(dimensionOfGeometryB, dimensionOfGeometryA)
 	}
 	if (dimensionOfGeometryA == dimA && dimensionOfGeometryB == dimA) ||
 		(dimensionOfGeometryA == dimL && dimensionOfGeometryB == dimL) ||
 		(dimensionOfGeometryA == dimL && dimensionOfGeometryB == dimA) ||
 		(dimensionOfGeometryA == dimP && dimensionOfGeometryB == dimA) ||
 		(dimensionOfGeometryA == dimP && dimensionOfGeometryB == dimL) {
-		return im[location.Interior][location.Interior] == dimFALSE && (im.isTrue(im[location.Interior][location.Boundary]) ||
-			im.isTrue(im[location.Boundary][location.Interior]) || im.isTrue(im[location.Boundary][location.Boundary]))
+		return im[location.Interior][location.Interior] == dimFALSE && (im.IsTrue(im[location.Interior][location.Boundary]) ||
+			im.IsTrue(im[location.Boundary][location.Interior]) || im.IsTrue(im[location.Boundary][location.Boundary]))
 	}
 
 	return false
 }
 
-// crosses tests whether this geometry crosses the specified geometry.
+// Crosses tests whether this geometry crosses the specified geometry.
 //
 // The crosses< predicate has the following equivalent definitions:
 //
@@ -180,18 +180,18 @@ func (im *IntersectionMatrix) touches(dimensionOfGeometryA, dimensionOfGeometryB
 // The SFS defined this predicate only for P/L, P/A, L/L, and L/A situations.
 // JTS extends the definition to apply to L/P, A/P and A/L situations as well.
 // This makes the relation symmetric.
-func (im *IntersectionMatrix) crosses(dimensionOfGeometryA, dimensionOfGeometryB dimension) bool {
+func (im *IntersectionMatrix) Crosses(dimensionOfGeometryA, dimensionOfGeometryB dimension) bool {
 	if (dimensionOfGeometryA == dimP && dimensionOfGeometryB == dimL) ||
 		(dimensionOfGeometryA == dimP && dimensionOfGeometryB == dimA) ||
 		(dimensionOfGeometryA == dimL && dimensionOfGeometryB == dimA) {
-		return im.isTrue(im[location.Interior][location.Interior]) &&
-			im.isTrue(im[location.Interior][location.Exterior])
+		return im.IsTrue(im[location.Interior][location.Interior]) &&
+			im.IsTrue(im[location.Interior][location.Exterior])
 	}
 	if (dimensionOfGeometryA == dimL && dimensionOfGeometryB == dimP) ||
 		(dimensionOfGeometryA == dimA && dimensionOfGeometryB == dimP) ||
 		(dimensionOfGeometryA == dimA && dimensionOfGeometryB == dimL) {
-		return im.isTrue(im[location.Interior][location.Interior]) &&
-			im.isTrue(im[location.Exterior][location.Interior])
+		return im.IsTrue(im[location.Interior][location.Interior]) &&
+			im.IsTrue(im[location.Exterior][location.Interior])
 	}
 	if dimensionOfGeometryA == dimL && dimensionOfGeometryB == dimL {
 		return im[location.Interior][location.Interior] == 0
@@ -199,92 +199,92 @@ func (im *IntersectionMatrix) crosses(dimensionOfGeometryA, dimensionOfGeometryB
 	return false
 }
 
-// within tests whether this IntersectionMatrix is T*F**F***
-func (im *IntersectionMatrix) within(dimensionOfGeometryA, dimensionOfGeometryB int) bool {
-	return im.isTrue(im[location.Interior][location.Interior]) &&
+// Within tests whether this IntersectionMatrix is T*F**F***
+func (im *IntersectionMatrix) Within(dimensionOfGeometryA, dimensionOfGeometryB int) bool {
+	return im.IsTrue(im[location.Interior][location.Interior]) &&
 		im[location.Interior][location.Exterior] == dimFALSE &&
 		im[location.Boundary][location.Exterior] == dimFALSE
 }
 
-// contains tests whether this IntersectionMatrix is  T*****FF*
-func (im *IntersectionMatrix) contains(dimensionOfGeometryA, dimensionOfGeometryB int) bool {
-	return im.isTrue(im[location.Interior][location.Interior]) &&
+// Contains tests whether this IntersectionMatrix is  T*****FF*
+func (im *IntersectionMatrix) Contains(dimensionOfGeometryA, dimensionOfGeometryB int) bool {
+	return im.IsTrue(im[location.Interior][location.Interior]) &&
 		im[location.Exterior][location.Interior] == dimFALSE &&
 		im[location.Exterior][location.Boundary] == dimFALSE
 }
 
-// covers tests if this IntersectionMatrix is:
+// Covers tests if this IntersectionMatrix is:
 // * T*****FF*
 // * or *T****FF*
 // * or ***T**FF*
 // * or ****T*FF*
-func (im *IntersectionMatrix) covers(dimensionOfGeometryA, dimensionOfGeometryB int) bool {
-	hasPointInCommon := im.isTrue(im[location.Interior][location.Interior]) ||
-		im.isTrue(im[location.Interior][location.Boundary]) ||
-		im.isTrue(im[location.Boundary][location.Interior]) ||
-		im.isTrue(im[location.Boundary][location.Boundary])
+func (im *IntersectionMatrix) Covers(dimensionOfGeometryA, dimensionOfGeometryB int) bool {
+	hasPointInCommon := im.IsTrue(im[location.Interior][location.Interior]) ||
+		im.IsTrue(im[location.Interior][location.Boundary]) ||
+		im.IsTrue(im[location.Boundary][location.Interior]) ||
+		im.IsTrue(im[location.Boundary][location.Boundary])
 
 	return hasPointInCommon &&
 		im[location.Exterior][location.Interior] == dimFALSE &&
 		im[location.Exterior][location.Boundary] == dimFALSE
 }
 
-// coveredBy tests if this IntersectionMatrix is
+// CoveredBy tests if this IntersectionMatrix is
 //  * T*F**F***
 //  * or *TF**F***
 //  * or **FT*F***
 //  * or **F*TF***
-func (im *IntersectionMatrix) coveredBy(dimensionOfGeometryA, dimensionOfGeometryB int) bool {
-	hasPointInCommon := im.isTrue(im[location.Interior][location.Interior]) ||
-		im.isTrue(im[location.Interior][location.Boundary]) ||
-		im.isTrue(im[location.Boundary][location.Interior]) ||
-		im.isTrue(im[location.Boundary][location.Boundary])
+func (im *IntersectionMatrix) CoveredBy(dimensionOfGeometryA, dimensionOfGeometryB int) bool {
+	hasPointInCommon := im.IsTrue(im[location.Interior][location.Interior]) ||
+		im.IsTrue(im[location.Interior][location.Boundary]) ||
+		im.IsTrue(im[location.Boundary][location.Interior]) ||
+		im.IsTrue(im[location.Boundary][location.Boundary])
 
 	return hasPointInCommon &&
 		im[location.Interior][location.Exterior] == dimFALSE &&
 		im[location.Boundary][location.Exterior] == dimFALSE
 }
 
-// equal tests whether the argument dimensions are equal and this IntersectionMatrix matches the pattern T*F**FFF*
+// Equal tests whether the argument dimensions are equal and this IntersectionMatrix matches the pattern T*F**FFF*
 //
 // Note: This pattern differs from the one stated in Simple feature access - Part 1: Common architecture
 // That document states the pattern as TFFFTFFFT.  This would specify that
 // two identical POINTs are not equal, which is not desirable behaviour.
 // The pattern used here has been corrected to compute equality in this situation.
-func (im *IntersectionMatrix) equal(dimensionOfGeometryA, dimensionOfGeometryB int) bool {
+func (im *IntersectionMatrix) Equal(dimensionOfGeometryA, dimensionOfGeometryB int) bool {
 	if dimensionOfGeometryA != dimensionOfGeometryB {
 		return false
 	}
-	return im.isTrue(im[location.Interior][location.Interior]) &&
+	return im.IsTrue(im[location.Interior][location.Interior]) &&
 		im[location.Interior][location.Exterior] == dimFALSE &&
 		im[location.Boundary][location.Exterior] == dimFALSE &&
 		im[location.Exterior][location.Interior] == dimFALSE &&
 		im[location.Exterior][location.Boundary] == dimFALSE
 }
 
-// overlaps tests if this IntersectionMatrix is
+// Overlaps tests if this IntersectionMatrix is
 // * T*T***T** (for two points or two surfaces)
 // * 1*T***T** (for two curves)
-func (im *IntersectionMatrix) overlaps(dimensionOfGeometryA, dimensionOfGeometryB dimension) bool {
+func (im *IntersectionMatrix) Overlaps(dimensionOfGeometryA, dimensionOfGeometryB dimension) bool {
 	if (dimensionOfGeometryA == dimP && dimensionOfGeometryB == dimP) ||
 		(dimensionOfGeometryA == dimA && dimensionOfGeometryB == dimA) {
-		return im.isTrue(im[location.Interior][location.Interior]) &&
-			im.isTrue(im[location.Interior][location.Exterior]) &&
-			im.isTrue(im[location.Exterior][location.Interior])
+		return im.IsTrue(im[location.Interior][location.Interior]) &&
+			im.IsTrue(im[location.Interior][location.Exterior]) &&
+			im.IsTrue(im[location.Exterior][location.Interior])
 	}
 	if dimensionOfGeometryA == dimL && dimensionOfGeometryB == dimL {
 		return im[location.Interior][location.Interior] == 1 &&
-			im.isTrue(im[location.Interior][location.Exterior]) &&
-			im.isTrue(im[location.Exterior][location.Interior])
+			im.IsTrue(im[location.Interior][location.Exterior]) &&
+			im.IsTrue(im[location.Exterior][location.Interior])
 	}
 	return false
 }
 
-// matchesSymbol tests whether the elements of this IntersectionMatrix satisfies the required dimension symbols.
-func (im *IntersectionMatrix) matchesSymbols(requiredDimensionSymbols string) bool {
+// MatchesSymbols tests whether the elements of this IntersectionMatrix satisfies the required dimension symbols.
+func (im *IntersectionMatrix) MatchesSymbols(requiredDimensionSymbols string) bool {
 	for ai := 0; ai < 3; ai++ {
 		for bi := 0; bi < 3; bi++ {
-			if !im.matches(im[ai][bi], toDimensionSymbol(requiredDimensionSymbols[3*ai+bi])) {
+			if !im.Matches(im[ai][bi], toDimensionSymbol(requiredDimensionSymbols[3*ai+bi])) {
 				return false
 			}
 		}
@@ -292,8 +292,8 @@ func (im *IntersectionMatrix) matchesSymbols(requiredDimensionSymbols string) bo
 	return true
 }
 
-// transpose transposes this IntersectionMatrix
-func (im *IntersectionMatrix) transpose() *IntersectionMatrix {
+// Transpose transposes this IntersectionMatrix
+func (im *IntersectionMatrix) Transpose() *IntersectionMatrix {
 	im[1][0], im[0][1] = im[0][1], im[1][0]
 	im[2][0], im[0][2] = im[0][2], im[2][0]
 	im[2][1], im[1][2] = im[1][2], im[2][1]
