@@ -9,7 +9,7 @@ import (
 // contains each unique coordinate in the coordData.  The ordering of the coords are the
 // same as the input.
 func UniqueCoords(layout geom.Layout, compare CoordCompare, coordData []float64) []float64 {
-	set := NewTreeSet(layout, compare)
+	set := NewCoordTreeSet(layout, compare)
 	stride := layout.Stride()
 	uniqueCoords := make([]float64, 0, len(coordData))
 	numCoordsAdded := 0

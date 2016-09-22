@@ -179,7 +179,7 @@ func (calc *convexHullCalculator) reduce(inputPts []float64) []float64 {
 	}
 
 	// add points defining polygon
-	reducedSet := transform.NewTreeSet(calc.layout, comparator{})
+	reducedSet := transform.NewCoordTreeSet(calc.layout, comparator{})
 	for i := 0; i < len(polyPts); i += calc.stride {
 		reducedSet.Insert(polyPts[i : i+calc.stride])
 	}
