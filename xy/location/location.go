@@ -9,10 +9,12 @@ import (
 type Type int
 
 const (
+	// None is used for uninitialized location values.
+	None Type = iota
 	// Interior is the location value for the interior of a geometry.
 	// Also, DE-9IM row index of the interior of the first geometry and column index of
 	// the interior of the second geometry.
-	Interior Type = iota
+	Interior
 	// Boundary is the location value for the boundary of a geometry.
 	// Also, DE-9IM row index of the boundary of the first geometry and column index of
 	// the boundary of the second geometry.
@@ -21,12 +23,9 @@ const (
 	// Also, DE-9IM row index of the exterior of the first geometry and column index of
 	// the exterior of the second geometry.
 	Exterior
-	// None is used for uninitialized location values.
-	None
 )
 
 func (t Type) String() string {
-
 	switch t {
 	case Exterior:
 		return "Exterior"
