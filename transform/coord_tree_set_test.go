@@ -1,15 +1,14 @@
 package transform
 
 import (
-	"reflect"
-	"testing"
-
 	"github.com/twpayne/go-geom"
 	"github.com/twpayne/go-geom/sorting"
+	"reflect"
+	"testing"
 )
 
 func TestTree(t *testing.T) {
-	set := NewTreeSet(geom.XY, testCompare{})
+	set := NewCoordTreeSet(geom.XY, testCompare{})
 	set.Insert([]float64{3, 1})
 	set.Insert([]float64{3, 2})
 	set.Insert([]float64{1, 2})

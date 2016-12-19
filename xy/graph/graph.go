@@ -11,21 +11,6 @@ type T interface {
 	Edges() []Edge
 }
 
-type PropertyName string
-
-const (
-	// Visited is a property indicating if the Graphable has been visited in the current algorithm
-	// values are bool
-	Visited PropertyName = "Visited"
-	// Coord is a property which is a representative coordinate for the Graphable
-	// values are geom.Coord
-	Coord PropertyName = "Coord"
-	// Isolated is a property indicating if the Graphable interacts or touches any other component.
-	// This is the case if the Graphable only has a single RelatedObject
-	// values are bool
-	Isolated PropertyName = "Isolated"
-)
-
 // Graphable is the basic interface for all graph components (Nodes and Edge)
 // Graphical objects can be associated/related to one or more geometries.  This
 // can be used in certian algorithms like Buffer
@@ -33,9 +18,7 @@ type Graphable interface {
 	// Related returns the associated/related geometries along with
 	// how they are related to the current Graphable object
 	Related() []RelatedObject
-	// Properties is a storage area for algorithms to put data related to the algorithm
-	// PropertyName constants are properties commonly used
-	Properties() map[PropertyName]interface{}
+	Visited() bool
 }
 
 // RelatedObject defines the relationship between to a geometry.
@@ -62,18 +45,18 @@ type RelatedObject struct {
 // objects (like Nodes and Edges)
 type GraphableImpl struct {
 	// Contain the related objects for retrieval in RelatedObject interface
-	Related    []RelatedObject
-	properties map[PropertyName]interface{}
+	RelatedObjects []RelatedObject
+	visited        bool
 }
 
 var _ Graphable = GraphableImpl{}
 
 func (g GraphableImpl) Related() []RelatedObject {
-	return g.Related
+	return g.RelatedObjects
 }
 
-func (g GraphableImpl) Properties() map[PropertyName]interface{} {
-	return g.properties
+func (g GraphableImpl) Visited() bool {
+	return g.visited
 }
 
 // Node represents a node in a graph
@@ -82,3 +65,7 @@ type Node struct {
 }
 
 var _ Graphable = Node{}
+
+func (n *Node) isIsolated() bool {
+	return len(n.RelatedObjects) == 1
+}
