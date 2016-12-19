@@ -124,12 +124,25 @@ func (c Coord) Equal(layout Layout, other Coord) bool {
 
 // T is a generic interface implemented by all geometry types.
 type T interface {
+	// Layout defines how the coordinates are organized in the array of floats (returned by FlatCoords())
 	Layout() Layout
+	// Stride is the same as Layout().Stride()
 	Stride() int
+	// Bounds is the Bounds object that contains the geometry
 	Bounds() *Bounds
+	// FlatCoords contains the coordinates of the geometry packing into a single array of floats.
+	// To interpret the coords, the Layout() must be used
 	FlatCoords() []float64
+	// Ends returns the ends of the sub geometries contained in this geometry.
+	// If the geometry type does not support sub-geometries (like lines) then this
+	// returns nil.
+	// (MultiLine and Polygon support sub-geometries)
 	Ends() []int
+	// Endss returns nil unless this type is a MultiPolygon.  In the case of MultiPolygon
+	// Endss returns an array of arrays where the inner array are essentially the Ends of the contained polygons
 	Endss() [][]int
+	// The Reference System code identifying a the reference system the geometry is encoded in.
+	// The meaning and coding of the SRID is application dependent.
 	SRID() int
 }
 
