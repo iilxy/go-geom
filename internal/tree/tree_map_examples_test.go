@@ -1,8 +1,8 @@
-package transform_test
+package tree_test
 
 import (
 	"fmt"
-	"github.com/twpayne/go-geom/transform"
+	"github.com/twpayne/go-geom/internal/tree"
 )
 
 type exampleCompare struct{}
@@ -17,7 +17,7 @@ func (c exampleCompare) IsLess(o1, o2 interface{}) bool {
 }
 
 func ExampleNewTreeMap() {
-	treeMap := transform.NewTreeMap(exampleCompare{})
+	treeMap := tree.NewTreeMap(exampleCompare{})
 	treeMap.Insert(1, "_1_")
 	treeMap.Insert(3, "Three")
 	treeMap.Insert(2, "Two")
@@ -33,7 +33,7 @@ func ExampleNewTreeMap() {
 }
 
 func ExampleTreeMap_Walk() {
-	treeMap := transform.NewTreeMap(exampleCompare{})
+	treeMap := tree.NewTreeMap(exampleCompare{})
 	treeMap.Insert(1, "_1_")
 	treeMap.Insert(3, "Three")
 	treeMap.Insert(2, "Two")
@@ -47,7 +47,7 @@ func ExampleTreeMap_Walk() {
 }
 
 func ExampleTreeMap_WalkInterruptible() {
-	treeMap := transform.NewTreeMap(exampleCompare{})
+	treeMap := tree.NewTreeMap(exampleCompare{})
 	treeMap.Insert(1, "One")
 	treeMap.Insert(3, "Three")
 	treeMap.Insert(2, "Two")
@@ -62,7 +62,7 @@ func ExampleTreeMap_WalkInterruptible() {
 }
 
 func ExampleTreeMap_Get() {
-	treeMap := transform.NewTreeMap(exampleCompare{})
+	treeMap := tree.NewTreeMap(exampleCompare{})
 	treeMap.Insert(1, "One")
 	treeMap.Insert(3, "Three")
 	treeMap.Insert(2, "Two")
@@ -72,4 +72,15 @@ func ExampleTreeMap_Get() {
 	fmt.Println(value, has)
 
 	// Output: One true
+}
+
+func ExampleTreeMap_SetDefault() {
+	treeMap := tree.NewTreeMap(exampleCompare{})
+	treeMap.SetDefault("Default String")
+
+	value, has := treeMap.Get(1)
+
+	fmt.Println(value, has)
+
+	// Output: Default String false
 }

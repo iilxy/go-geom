@@ -1,4 +1,4 @@
-package transform
+package internal
 
 import (
 	"github.com/twpayne/go-geom"

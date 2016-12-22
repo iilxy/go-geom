@@ -55,7 +55,15 @@ func Calculate(geom1, geom2 geom.T) Calculation {
 
 	// if the Geometries don't overlap there is nothing to do
 	if !geom1.Bounds().Overlaps(geom1.Layout(), geom2.Bounds()) {
-		computeDisjointIM(im)
+		computeDisjointIM(im, geom1, geom2)
 		return im
+	}
+}
+
+func computeDisjointIM(im internal.IntersectionMatrix, geom1, geom2 geom.T) {
+	if len(geom1.FlatCoords()) == 0 {
+
+		im[location.Interior][location.Interior] = geom1.Layout().Stride()
+		im[location.Boundary][location.Exterior] = ga.getBoundaryDimension()
 	}
 }

@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/twpayne/go-geom"
+	"github.com/twpayne/go-geom/sorting"
 )
 
 func TestUniqueCoords(t *testing.T) {
 	for i, tc := range []struct {
 		pts, expected []float64
-		compare       Compare
+		compare       geom.Compare
 		layout        geom.Layout
 	}{
 		{
@@ -30,4 +31,13 @@ func TestUniqueCoords(t *testing.T) {
 			t.Errorf("Test %v Failed: FlatCoords(%v, ..., %v) didn't result in the expected result.  Expected\n\t%v\nbut was\n\t%v", i+1, tc.layout, tc.compare, tc.expected, filteredCoords)
 		}
 	}
+}
+
+type testCompare struct{}
+
+func (c testCompare) IsEquals(x, y geom.Coord) bool {
+	return x[0] == y[0] && x[1] == y[1]
+}
+func (c testCompare) IsLess(x, y geom.Coord) bool {
+	return sorting.IsLess2D(x, y)
 }

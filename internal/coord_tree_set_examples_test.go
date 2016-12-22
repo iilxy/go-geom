@@ -1,10 +1,10 @@
-package transform_test
+package internal_test
 
 import (
 	"fmt"
 	"github.com/twpayne/go-geom"
+	"github.com/twpayne/go-geom/internal"
 	"github.com/twpayne/go-geom/sorting"
-	"github.com/twpayne/go-geom/transform"
 )
 
 type treeSetExampleCompare struct{}
@@ -17,7 +17,7 @@ func (c treeSetExampleCompare) IsLess(x, y geom.Coord) bool {
 }
 
 func ExampleNewTreeSet() {
-	set := transform.NewCoordTreeSet(geom.XY, treeSetExampleCompare{})
+	set := internal.NewCoordTreeSet(geom.XY, treeSetExampleCompare{})
 	set.Insert([]float64{3, 1})
 	set.Insert([]float64{3, 2})
 	set.Insert([]float64{1, 2})

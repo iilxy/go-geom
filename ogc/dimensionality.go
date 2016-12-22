@@ -1,16 +1,18 @@
-package internal
+package ogc
 
 import "fmt"
 
-// Dim enumerates the values representing the dimensions of a point, a curve and a surface.
+// Dimensionality enumerates the values representing the dimensions of a point, a curve and a surface.
 // Also provides constants representing the dimensions of the empty geometry and
 // non-empty geometries, and the wildcard constant AnyDim meaning "any dimension".
 // These constants are used as the entries inIntersectionMatrixs.
-type Dim int
+//
+// The concept is defined in OGC Simple Feature Specification 2.1.13.1
+type Dimensionality int
 
 const (
 	// Dimension value for any dimension (= {FALSE, TRUE}).
-	AnyDim Dim = iota - 3
+	AnyDim Dimensionality = iota - 3
 	// Dimension value of non-empty geometries (= {P, L, A})
 	NonEmptyGeomDim
 	// Dimension value of the empty geometry (-1)
@@ -34,7 +36,7 @@ const (
 	AreaDimSymbol         DimSymbol = '2'
 )
 
-func toDimensionSymbol(sym byte) DimSymbol {
+func ToDimensionSymbol(sym byte) DimSymbol {
 	if sym == byte(NonEmptyGeomDimSymbol) || sym == byte(EmptyGeomDimSymbol) || sym == byte(AnyDimSymbol) ||
 		sym == byte(PointDimSymbol) || sym == byte(LineDimSymbol) || sym == byte(AreaDimSymbol) {
 		return DimSymbol(sym)
@@ -42,7 +44,7 @@ func toDimensionSymbol(sym byte) DimSymbol {
 
 	panic(fmt.Sprintf("The dimension %v is not a valid dimension", sym))
 }
-func (d Dim) toDimensionSymbol() DimSymbol {
+func (d Dimensionality) ToDimensionSymbol() DimSymbol {
 	switch d {
 	case EmptyGeomDim:
 		return NonEmptyGeomDimSymbol
@@ -61,7 +63,7 @@ func (d Dim) toDimensionSymbol() DimSymbol {
 	}
 }
 
-func (ds DimSymbol) toDimensionValue() Dim {
+func (ds DimSymbol) ToDimensionValue() Dimensionality {
 	switch ds {
 	case NonEmptyGeomDimSymbol:
 		return EmptyGeomDim

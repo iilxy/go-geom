@@ -19,6 +19,11 @@ func NewLinearRingFlat(layout Layout, flatCoords []float64) *LinearRing {
 	return lr
 }
 
+// Rings do not have Boundaries
+func (lr *LinearRing) OGCBoundary() T {
+	return NewMultiLineString(lr.layout)
+}
+
 // Area returns the the area.
 func (lr *LinearRing) Area() float64 {
 	return doubleArea1(lr.flatCoords, 0, len(lr.flatCoords), lr.stride) / 2

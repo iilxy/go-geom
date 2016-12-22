@@ -5,6 +5,7 @@ package geom
 import (
 	"errors"
 	"fmt"
+	"github.com/twpayne/go-geom/ogc"
 	"math"
 )
 
@@ -144,6 +145,25 @@ type T interface {
 	// The Reference System code identifying a the reference system the geometry is encoded in.
 	// The meaning and coding of the SRID is application dependent.
 	SRID() int
+	// Dimensionality of this type of geometry.  Defined in the OGC Simple Feature Specification
+	// section 2.1.13.1.
+	Dimensionality() ogc.Dimensionality
+	// OGCBoundary returns the boundary geometry as defined in the OGC Simple Feature Specification
+	// section 2.1.13.1.
+	// If a geometry is empty (no coordinates) or otherwise does not have a boundary the result is
+	// a MultiPoint with no points.
+	// Points and Closed lines have no boundaries (returns MultiPoint containing no points)
+	// Boundary of Lines are the end points of the lines
+	// Boundary of a MultiCurve consists of those Points that are in the boundaries of an odd number of
+	// its element Curves.
+	// Boundary of a Polygon consists of its set of Rings.
+	// Boundary of a MultiPolygon consists of the set of Rings of its Polygons.
+	// Boundary of an arbitrary Collection of geometries whose interiors are disjoint consists of
+	// geometries drawn from the boundaries of the element geometries by application of the ‘mod 2’ union rule
+	OGCBoundary() T
+	// OGCBoundaryDimensionality efficiently calculates of OGCBoundary().Dimensionality()
+	// (Skips creating the geometry)
+	OGCBoundaryDimensionality() ogc.Dimensionality
 }
 
 // MIndex returns the index of the M dimension, or -1 if the l does not have an

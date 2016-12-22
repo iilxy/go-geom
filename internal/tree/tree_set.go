@@ -1,4 +1,4 @@
-package transform
+package tree
 
 // TreeSet sorts the coordinates according to the Compare strategy and removes duplicates as
 // dictated by the Equals function of the Compare strategy
@@ -7,7 +7,7 @@ type TreeSet struct {
 }
 
 // NewTreeSet creates a new TreeSet instance
-func NewTreeSet(compare Compare) *CoordTreeSet {
+func NewTreeSet(compare Compare) *TreeSet {
 	treeMap := NewTreeMap(compare)
 	return &TreeSet{
 		treeMap: treeMap,

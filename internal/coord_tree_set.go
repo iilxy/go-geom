@@ -1,8 +1,9 @@
-package transform
+package internal
 
 import (
 	"fmt"
 	"github.com/twpayne/go-geom"
+	"github.com/twpayne/go-geom/internal/tree"
 )
 
 // Compare compares two coordinates for equality and magnitude
@@ -11,30 +12,30 @@ type CoordCompare interface {
 	IsLess(x, y geom.Coord) bool
 }
 
-type compareAdapter struct {
-	compare CoordCompare
+type CompareAdapter struct {
+	Compare CoordCompare
 }
 
-var _ Compare = compareAdapter{}
+var _ tree.Compare = CompareAdapter{}
 
-func (c compareAdapter) IsEquals(o1, o2 interface{}) bool {
-	return c.compare.IsEquals(o1.(geom.Coord), o2.(geom.Coord))
+func (c CompareAdapter) IsEquals(o1, o2 interface{}) bool {
+	return c.Compare.IsEquals(o1.(geom.Coord), o2.(geom.Coord))
 }
-func (c compareAdapter) IsLess(o1, o2 interface{}) bool {
-	return c.compare.IsLess(o1.(geom.Coord), o2.(geom.Coord))
+func (c CompareAdapter) IsLess(o1, o2 interface{}) bool {
+	return c.Compare.IsLess(o1.(geom.Coord), o2.(geom.Coord))
 }
 
 // CoordTreeSet sorts the coordinates according to the Compare strategy and removes duplicates as
 // dictated by the Equals function of the Compare strategy
 type CoordTreeSet struct {
-	treeMap *TreeMap
+	treeMap *tree.TreeMap
 	layout  geom.Layout
 	stride  int
 }
 
 // NewCoordTreeSet creates a new TreeSet instance
 func NewCoordTreeSet(layout geom.Layout, compare CoordCompare) *CoordTreeSet {
-	treeMap := NewTreeMap(compareAdapter{compare})
+	treeMap := tree.NewTreeMap(CompareAdapter{compare})
 	return &CoordTreeSet{
 		layout:  layout,
 		stride:  layout.Stride(),

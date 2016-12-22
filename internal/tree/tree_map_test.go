@@ -1,12 +1,12 @@
-package transform_test
+package tree_test
 
 import (
-	"github.com/twpayne/go-geom/transform"
+	"github.com/twpayne/go-geom/internal/tree"
 	"testing"
 )
 
 func TestTreeMap_Insert(t *testing.T) {
-	treeMap := transform.NewTreeMap(exampleCompare{})
+	treeMap := tree.NewTreeMap(exampleCompare{})
 	if !treeMap.Insert(1, "_1_") {
 		t.Fatalf("Insert did not report as being inserted")
 	}
@@ -38,7 +38,7 @@ func TestTreeMap_Insert(t *testing.T) {
 
 func TestTreeMap_Get(t *testing.T) {
 
-	treeMap := transform.NewTreeMap(exampleCompare{})
+	treeMap := tree.NewTreeMap(exampleCompare{})
 	treeMap.Insert(1, "_1_")
 	treeMap.Insert(3, "Three")
 	treeMap.Insert(2, "Two")

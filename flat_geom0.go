@@ -1,10 +1,24 @@
 package geom
 
+import "github.com/twpayne/go-geom/ogc"
+
 type geom0 struct {
 	layout     Layout
 	stride     int
 	flatCoords []float64
 	srid       int
+}
+
+func (g *geom0) OGCBoundaryDimensionality() ogc.Dimensionality {
+	return ogc.EmptyGeomDim
+}
+
+func (g *geom0) Dimensionality() ogc.Dimensionality {
+	return ogc.PointDim
+}
+
+func (g *geom0) OGCBoundary() T {
+	return NewMultiPoint(g.layout)
 }
 
 func (g *geom0) Bounds() *Bounds {

@@ -1,4 +1,4 @@
-package transform
+package tree
 
 // Compare compares two coordinates for equality and magnitude
 type Compare interface {
@@ -15,9 +15,10 @@ type tree struct {
 // TreeSet sorts the coordinates according to the Compare strategy and removes duplicates as
 // dictated by the Equals function of the Compare strategy
 type TreeMap struct {
-	compare Compare
-	tree    *tree
-	size    int
+	compare      Compare
+	tree         *tree
+	size         int
+	defaultValue interface{}
 }
 
 // NewTreeSet creates a new TreeSet instance
@@ -35,26 +36,32 @@ func (tm *TreeMap) Size() int {
 // Insert puts a key value pair into to the tree map.
 // Returns true if a new entry was added, false if the key
 // was already in the tree (the value may still have been updated)
-func (set *TreeMap) Insert(key, value interface{}) bool {
-	tree, added := set.insertImpl(set.tree, key, value)
+func (tm *TreeMap) Insert(key, value interface{}) bool {
+	tree, added := tm.insertImpl(tm.tree, key, value)
 	if added {
-		set.tree = tree
-		set.size++
+		tm.tree = tree
+		tm.size++
 	}
 
 	return added
 }
 
+// SetDefault declares the value that is returned by Get if the key is not currently in the map.  The default
+// nil
+func (tm *TreeMap) SetDefault(value interface{}) {
+	tm.defaultValue = value
+}
+
 // Get returns the value associated with the key and true or nil and false
 // the key does not have to be the same instance as the key in the map only
 // be the equivalent key as evaluated by the Compare object configured in this tree
-func (set *TreeMap) Get(key interface{}) (value interface{}, has bool) {
-	return set.getImpl(set.tree, key)
+func (tm *TreeMap) Get(key interface{}) (value interface{}, has bool) {
+	return tm.getImpl(tm.tree, key)
 }
 
 // FindKey searches the key-set of this map for a matching key and returns the key instance from the map (if match found)
-func (set *TreeMap) FindKey(key interface{}) (actual interface{}, has bool) {
-	return set.findImpl(set.tree, key)
+func (tm *TreeMap) FindKey(key interface{}) (actual interface{}, has bool) {
+	return tm.findImpl(tm.tree, key)
 }
 
 // Walk passes each element in the map to the visitor.  The order of visiting is from the element with the smallest key
@@ -108,7 +115,7 @@ func (tm *TreeMap) insertImpl(t *tree, key, value interface{}) (*tree, bool) {
 func (tm *TreeMap) getImpl(t *tree, key interface{}) (interface{}, bool) {
 	switch {
 	case t == nil:
-		return nil, false
+		return tm.defaultValue, false
 	case tm.compare.IsEquals(key, t.key):
 		return t.value, true
 	case tm.compare.IsLess(key, t.key):
