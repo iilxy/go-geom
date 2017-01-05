@@ -1,6 +1,6 @@
 package geom
 
-import "github.com/twpayne/go-geom/ogc"
+import "github.com/twpayne/go-geom/xy/dimension"
 
 type geom0 struct {
 	layout     Layout
@@ -9,12 +9,12 @@ type geom0 struct {
 	srid       int
 }
 
-func (g *geom0) OGCBoundaryDimensionality() ogc.Dimensionality {
-	return ogc.EmptyGeomDim
+func (g *geom0) OGCBoundaryDimensionality() dimension.T {
+	return dimension.EmptyGeomDim
 }
 
-func (g *geom0) Dimensionality() ogc.Dimensionality {
-	return ogc.PointDim
+func (g *geom0) Dimensionality() dimension.T {
+	return dimension.PointDim
 }
 
 func (g *geom0) OGCBoundary() T {

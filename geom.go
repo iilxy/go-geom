@@ -5,8 +5,8 @@ package geom
 import (
 	"errors"
 	"fmt"
-	"github.com/twpayne/go-geom/ogc"
 	"math"
+	"github.com/twpayne/go-geom/xy/dimension"
 )
 
 // A Layout describes the meaning of an N-dimensional coordinate. Layout(N) for
@@ -147,7 +147,7 @@ type T interface {
 	SRID() int
 	// Dimensionality of this type of geometry.  Defined in the OGC Simple Feature Specification
 	// section 2.1.13.1.
-	Dimensionality() ogc.Dimensionality
+	Dimensionality() dimension.T
 	// OGCBoundary returns the boundary geometry as defined in the OGC Simple Feature Specification
 	// section 2.1.13.1.
 	// If a geometry is empty (no coordinates) or otherwise does not have a boundary the result is
@@ -163,7 +163,7 @@ type T interface {
 	OGCBoundary() T
 	// OGCBoundaryDimensionality efficiently calculates of OGCBoundary().Dimensionality()
 	// (Skips creating the geometry)
-	OGCBoundaryDimensionality() ogc.Dimensionality
+	OGCBoundaryDimensionality() dimension.T
 }
 
 // MIndex returns the index of the M dimension, or -1 if the l does not have an

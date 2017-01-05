@@ -173,3 +173,13 @@ func TestMultiPointStrideMismatch(t *testing.T) {
 		}
 	}
 }
+
+func TestMultiPoint_OGCBoundary(t *testing.T) {
+	points := NewMultiPointFlat(XY, []float64{0, 0, 1, 1, 1, 0, 0, 0})
+
+	boundary := points.OGCBoundary()
+
+	if len(boundary.FlatCoords()) != 0 {
+		t.Errorf("points.OGCBoundary should return an empty geometry but returned: %v", boundary)
+	}
+}

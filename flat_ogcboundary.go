@@ -5,7 +5,7 @@ import (
 	"github.com/twpayne/go-geom/xy/boundary"
 )
 
-func boundary1(flatCoords []float64, layout Layout) T {
+func linestring_boundary(flatCoords []float64, layout Layout) T {
 	if len(flatCoords) == 0 {
 		return NewMultiPoint(layout)
 	}

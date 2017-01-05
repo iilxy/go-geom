@@ -1,14 +1,8 @@
 package geom
 
-import "github.com/twpayne/go-geom/ogc"
-
 type geom2 struct {
 	geom1
 	ends []int
-}
-
-func (g *geom2) Dimensionality() ogc.Dimensionality {
-	return 2
 }
 
 func (g *geom2) Coords() [][]Coord {

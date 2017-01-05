@@ -1,4 +1,4 @@
-package ogc
+package dimension
 
 import "fmt"
 
@@ -8,11 +8,11 @@ import "fmt"
 // These constants are used as the entries inIntersectionMatrixs.
 //
 // The concept is defined in OGC Simple Feature Specification 2.1.13.1
-type Dimensionality int
+type T int
 
 const (
 	// Dimension value for any dimension (= {FALSE, TRUE}).
-	AnyDim Dimensionality = iota - 3
+	AnyDim T = iota - 3
 	// Dimension value of non-empty geometries (= {P, L, A})
 	NonEmptyGeomDim
 	// Dimension value of the empty geometry (-1)
@@ -36,7 +36,7 @@ const (
 	AreaDimSymbol         DimSymbol = '2'
 )
 
-func ToDimensionSymbol(sym byte) DimSymbol {
+func ToSymbol(sym byte) DimSymbol {
 	if sym == byte(NonEmptyGeomDimSymbol) || sym == byte(EmptyGeomDimSymbol) || sym == byte(AnyDimSymbol) ||
 		sym == byte(PointDimSymbol) || sym == byte(LineDimSymbol) || sym == byte(AreaDimSymbol) {
 		return DimSymbol(sym)
@@ -44,8 +44,8 @@ func ToDimensionSymbol(sym byte) DimSymbol {
 
 	panic(fmt.Sprintf("The dimension %v is not a valid dimension", sym))
 }
-func (d Dimensionality) ToDimensionSymbol() DimSymbol {
-	switch d {
+func (t T) ToDimensionSymbol() DimSymbol {
+	switch t {
 	case EmptyGeomDim:
 		return NonEmptyGeomDimSymbol
 	case NonEmptyGeomDim:
@@ -59,11 +59,11 @@ func (d Dimensionality) ToDimensionSymbol() DimSymbol {
 	case AreaDim:
 		return AreaDimSymbol
 	default:
-		panic(fmt.Sprintf("The dimension %v is not a valid dimension", d))
+		panic(fmt.Sprintf("The dimension %v is not a valid dimension", t))
 	}
 }
 
-func (ds DimSymbol) ToDimensionValue() Dimensionality {
+func (ds DimSymbol) ToDimensionValue() T {
 	switch ds {
 	case NonEmptyGeomDimSymbol:
 		return EmptyGeomDim

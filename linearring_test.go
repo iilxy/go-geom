@@ -142,3 +142,13 @@ func TestLinearRingStrideMismatch(t *testing.T) {
 		}
 	}
 }
+
+func TestLinearRing_OGCBoundary(t *testing.T) {
+	ring := NewLinearRingFlat(XY, []float64{0, 0, 1, 1, 1, 0, 0, 0})
+
+	boundary := ring.OGCBoundary()
+
+	if len(boundary.FlatCoords()) != 0 {
+		t.Errorf("ring.OGCBoundary should return an empty geometry but returned: %v", boundary)
+	}
+}

@@ -1,5 +1,7 @@
 package geom
 
+import "github.com/twpayne/go-geom/xy/dimension"
+
 // A LinearRing is a linear ring.
 type LinearRing struct {
 	geom1
@@ -17,6 +19,13 @@ func NewLinearRingFlat(layout Layout, flatCoords []float64) *LinearRing {
 	lr.stride = layout.Stride()
 	lr.flatCoords = flatCoords
 	return lr
+}
+
+func (lr *LinearRing) OGCBoundaryDimensionality() dimension.T {
+	return dimension.PointDim
+}
+func (lr *LinearRing) Dimensionality() dimension.T {
+	return dimension.LineDim
 }
 
 // Rings do not have Boundaries

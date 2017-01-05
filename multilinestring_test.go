@@ -118,3 +118,69 @@ func TestMultiLineStringStrideMismatch(t *testing.T) {
 		}
 	}
 }
+
+func TestMultiLineString_OGCBoundary(t *testing.T) {
+	for i, c := range []struct {
+		layout   Layout
+		coords   [][]Coord
+		expected T
+	}{
+		{
+			layout: XY,
+			coords: [][]Coord{
+				{{1, 2}, {3, 2}, {3, 4}},
+				{{0, 0}, {0, 0}, {2, 2}, {5, 3}},
+			},
+			expected: NewMultiPointFlat(XY, []float64{0, 0, 1, 2, 3, 4, 5, 3}),
+		},
+		{
+			layout:   XY,
+			coords:   [][]Coord{},
+			expected: NewPointFlat(XY, []float64{}),
+		},
+		{
+			layout:   XY,
+			coords:   [][]Coord{{{1, 2}, {3, 2}, {1, 2}}},
+			expected: NewPointFlat(XY, []float64{}),
+		},
+		{
+			layout:   XY,
+			coords:   [][]Coord{{{1, 2}, {3, 2}, {3, 4}}},
+			expected: NewPointFlat(XY, []float64{1, 2, 3, 4}),
+		},
+		{
+			layout: XY,
+			coords: [][]Coord{
+				{{1, 2}, {3, 2}, {1, 2}},
+				{{0, 0}, {0, 0}, {2, 2}, {5, 3}},
+			},
+			expected: NewMultiPointFlat(XY, []float64{0, 0, 5, 3}),
+		},
+		{
+			layout: XYZ,
+			coords: [][]Coord{
+				{{1, 2, 0}, {3, 2, 1}, {3, 4, 2}},
+				{{0, 0, 3}, {0, 0, 4}, {2, 2, 6}, {5, 3, 5}},
+			},
+			expected: NewMultiPointFlat(XYZ, []float64{0, 0, 3, 1, 2, 0, 3, 4, 2, 5, 3, 5}),
+		},
+	} {
+		mls := NewMultiLineString(c.layout)
+		mls, err := mls.SetCoords(c.coords)
+
+		if err != nil {
+			t.Fatalf("TestCase '%d': Unable to SetCoords(%v): %v", i, c.coords, err)
+		}
+
+		boundary := mls.OGCBoundary()
+		if !reflect.DeepEqual(boundary.FlatCoords(), c.expected.FlatCoords()) {
+			t.Errorf("TestCase '%d': mls.OGCBoundary() == %v, want %v", i, boundary, c.expected)
+		}
+		if boundary.Layout() != c.expected.Layout() {
+			t.Errorf("TestCase '%d': mls.OGCBoundary() == %v, want %v", i, boundary, c.expected)
+		}
+		if !reflect.DeepEqual(boundary.Ends(), c.expected.Ends()) {
+			t.Errorf("TestCase '%d': mls.OGCBoundary() == %v, want %v", i, boundary, c.expected)
+		}
+	}
+}

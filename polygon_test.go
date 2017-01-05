@@ -128,3 +128,38 @@ func TestPolygonStrideMismatch(t *testing.T) {
 		}
 	}
 }
+
+func TestPolygon_OGCBoundary(t *testing.T) {
+	for i, c := range []struct {
+		layout   Layout
+		coords   [][]Coord
+		expected T
+	}{
+		{
+			layout: XY,
+			coords: [][]Coord{
+				{{0, 0}, {10, 0}, {10, 10}, {0, 10}, {0, 0}},
+				{{4, 4}, {6, 4}, {6, 6}, {4, 6}, {4, 4}},
+			},
+			expected: NewLineStringFlat(XY, []float64{1, 2, 3, 2, 3, 4}),
+		},
+	} {
+		poly := NewPolygon(c.layout)
+		poly, err := poly.SetCoords(c.coords)
+
+		if err != nil {
+			t.Fatalf("TestCase '%d': Unable to SetCoords(%v): %v", i, c.coords, err)
+		}
+
+		boundary := poly.OGCBoundary()
+		if !reflect.DeepEqual(boundary.FlatCoords(), c.expected.FlatCoords()) {
+			t.Errorf("TestCase '%d': mls.OGCBoundary() == %v, want %v", i, boundary, c.expected)
+		}
+		if boundary.Layout() != c.expected.Layout() {
+			t.Errorf("TestCase '%d': mls.OGCBoundary() == %v, want %v", i, boundary, c.expected)
+		}
+		if !reflect.DeepEqual(boundary.Ends(), c.expected.Ends()) {
+			t.Errorf("TestCase '%d': mls.OGCBoundary() == %v, want %v", i, boundary, c.expected)
+		}
+	}
+}

@@ -119,3 +119,31 @@ func TestMultiPolygonStrideMismatch(t *testing.T) {
 		}
 	}
 }
+
+func TestMultiPolygon_OGCBoundary(t *testing.T) {
+	for i, c := range []struct {
+		geom     MultiPolygon
+		expected T
+	}{
+	//	{
+	//		layout: XY,
+	//		coords: [][][]Coord{
+	//			{{{0, 0}, {10, 0}, {10, 10}, {0, 10}, {0, 0}},
+	//				{{4, 4}, {6, 4}, {6, 6}, {4, 6}, {4, 4}}},
+	//		},
+	//		expected: NewLinearRingFlat(XY, []float64{0, 0, 10, 0, 10, 10, 0, 10, 0, 0}),
+	//	},
+	} {
+
+		boundary := c.geom.OGCBoundary()
+		if !reflect.DeepEqual(boundary.FlatCoords(), c.expected.FlatCoords()) {
+			t.Errorf("TestCase '%d': mls.OGCBoundary().FlatCoords() == %v, want %v", i, boundary, c.expected)
+		}
+		if boundary.Layout() != c.expected.Layout() {
+			t.Errorf("TestCase '%d': mls.OGCBoundary().Layout() == %v, want %v", i, boundary, c.expected)
+		}
+		if !reflect.DeepEqual(boundary.Ends(), c.expected.Ends()) {
+			t.Errorf("TestCase '%d': mls.OGCBoundary().Ends() == %v, want %v", i, boundary, c.expected)
+		}
+	}
+}

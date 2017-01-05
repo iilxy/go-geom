@@ -1,5 +1,10 @@
 package geom
 
+import (
+	"github.com/twpayne/go-geom/xy/boundary"
+	"github.com/twpayne/go-geom/xy/dimension"
+)
+
 // A MultiLineString is a collection of LineStrings.
 type MultiLineString struct {
 	geom2
@@ -91,4 +96,45 @@ func (mls *MultiLineString) SetSRID(srid int) *MultiLineString {
 // Swap swaps the values of mls and mls2.
 func (mls *MultiLineString) Swap(mls2 *MultiLineString) {
 	mls.geom2.swap(&mls2.geom2)
+}
+
+func (mls *MultiLineString) OGCBoundaryDimensionality() dimension.T {
+	if mls.isClosed() {
+		return dimension.EmptyGeomDim
+	}
+	return dimension.PointDim
+}
+
+func (mls *MultiLineString) isClosed() bool {
+	if len(mls.flatCoords) == 0 {
+		return false
+	}
+	for start, i := 0, 0; i < len(mls.ends); i++ {
+		end := mls.ends[i]
+		if mls.flatCoords[start] != mls.flatCoords[end] {
+			return false
+		}
+		start = end
+	}
+
+	return true
+}
+
+func (mls *MultiLineString) Dimensionality() dimension.T {
+	return dimension.LineDim
+}
+
+func (mls *MultiLineString) OGCBoundary() T {
+	if len(mls.flatCoords) == 0 {
+		return NewPointFlat(mls.layout, []float64{})
+	}
+
+	boundaryData := computeBoundaryCoordinates(boundary.Mod2BoundaryNodeRule{}, mls.flatCoords, mls.layout, mls.ends)
+
+	// return Point or MultiPoint
+	if len(boundaryData) == mls.layout.Stride() {
+		return NewPointFlat(mls.layout, boundaryData)
+	}
+	// this handles 0 points case as well
+	return NewMultiPointFlat(mls.layout, boundaryData)
 }

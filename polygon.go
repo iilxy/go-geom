@@ -1,5 +1,7 @@
 package geom
 
+import "github.com/twpayne/go-geom/xy/dimension"
+
 // A Polygon represents a polygon as a collection of LinearRings. The first
 // LinearRing is the outer boundary. Subsequent LinearRings are inner
 // boundaries (holes).
@@ -93,4 +95,25 @@ func (p *Polygon) SetSRID(srid int) *Polygon {
 // Swap swaps the values of p and p2.
 func (p *Polygon) Swap(p2 *Polygon) {
 	p.geom2.swap(&p2.geom2)
+}
+
+func (p *Polygon) OGCBoundaryDimensionality() dimension.T {
+	return dimension.AreaDim
+}
+func (p *Polygon) Dimensionality() dimension.T {
+	return dimension.LineDim
+}
+
+func (p *Polygon) OGCBoundary() T {
+	if len(p.flatCoords) == 0 {
+		return NewMultiLineString(p.layout)
+	}
+
+	boundaryData := append([]float64{}, p.flatCoords...)
+	if len(p.ends) == 1 {
+		return NewLinearRingFlat(p.layout, boundaryData)
+	}
+
+	boundaryEnds := append([]int{}, p.ends...)
+	return NewMultiLineStringFlat(p.layout, boundaryData, boundaryEnds)
 }

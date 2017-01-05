@@ -1,5 +1,7 @@
 package geom
 
+import "github.com/twpayne/go-geom/xy/dimension"
+
 // A LineString represents a single, unbroken line, linearly interpreted
 // between zero or more control points.
 type LineString struct {
@@ -103,4 +105,15 @@ func (ls *LineString) SubLineString(start, stop int) *LineString {
 // Swap swaps the values of ls and ls2.
 func (ls *LineString) Swap(ls2 *LineString) {
 	ls.geom1.swap(&ls2.geom1)
+}
+
+func (ls *LineString) OGCBoundaryDimensionality() dimension.T {
+	return dimension.PointDim
+}
+func (ls *LineString) Dimensionality() dimension.T {
+	return dimension.LineDim
+}
+
+func (ls *LineString) OGCBoundary() T {
+	return linestring_boundary(ls.flatCoords, ls.layout)
 }

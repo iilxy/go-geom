@@ -1,17 +1,7 @@
 package geom
 
-import "github.com/twpayne/go-geom/ogc"
-
 type geom1 struct {
 	geom0
-}
-
-func (g *geom1) Dimensionality() ogc.Dimensionality {
-	return ogc.LineDim
-}
-
-func (lr *geom1) OGCBoundary() T {
-	return boundary1(lr.flatCoords, lr.layout)
 }
 
 func (g *geom1) Coord(i int) Coord {

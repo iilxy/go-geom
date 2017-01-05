@@ -166,3 +166,21 @@ func TestLineStringStrideMismatch(t *testing.T) {
 		}
 	}
 }
+
+func TestLineString_OGCBoundary(t *testing.T) {
+	ring := NewLineStringFlat(XY, []float64{0,0, 1,1, 1,0, 0,0})
+
+	boundary := ring.OGCBoundary()
+
+	if len(boundary.FlatCoords()) != 0 {
+		t.Errorf("ring.OGCBoundary should return an empty line string but returned: %v", boundary)
+	}
+
+	line := NewLineStringFlat(XY, []float64{0,0, 1,1, 1,0})
+
+	boundary = line.OGCBoundary()
+	expected := NewLineStringFlat(XY, []float64{0,0,1,0})
+	if !reflect.DeepEqual(boundary.FlatCoords(), expected.FlatCoords()) {
+		t.Errorf("ring.OGCBoundary should return %v but returned: %v", expected, boundary)
+	}
+}

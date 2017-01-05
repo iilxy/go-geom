@@ -1,5 +1,7 @@
 package geom
 
+import "github.com/twpayne/go-geom/xy/dimension"
+
 // A MultiPolygon is a collection of Polygons.
 type MultiPolygon struct {
 	geom3
@@ -112,4 +114,31 @@ func (mp *MultiPolygon) SetSRID(srid int) *MultiPolygon {
 // Swap swaps the values of mp and mp2.
 func (mp *MultiPolygon) Swap(mp2 *MultiPolygon) {
 	mp.geom3.swap(&mp2.geom3)
+}
+
+func (mp *MultiPolygon) OGCBoundaryDimensionality() dimension.T {
+	return dimension.AreaDim
+}
+func (mp *MultiPolygon) Dimensionality() dimension.T {
+	return dimension.LineDim
+}
+
+func (mp *MultiPolygon) OGCBoundary() T {
+	if len(mp.flatCoords) == 0 {
+		return NewLinearRingFlat(mp.layout, []float64{})
+	}
+
+	boundaryData := append([]float64{}, mp.flatCoords...)
+	boundaryEnds := []int{}
+
+	for _, ends := range mp.endss {
+		for _, end := range ends {
+			boundaryEnds = append(boundaryEnds, end)
+		}
+	}
+	if len(mp.endss) == 1 {
+		return NewLinearRingFlat(mp.layout, boundaryData)
+	}
+
+	return NewMultiLineStringFlat(mp.layout, boundaryData, boundaryEnds)
 }

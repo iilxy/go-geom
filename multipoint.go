@@ -1,6 +1,6 @@
 package geom
 
-import "github.com/twpayne/go-geom/ogc"
+import "github.com/twpayne/go-geom/xy/dimension"
 
 // A MultiPoint is a collection of Points.
 type MultiPoint struct {
@@ -23,11 +23,11 @@ func NewMultiPointFlat(layout Layout, flatCoords []float64) *MultiPoint {
 
 // points (even MultiPoints) do not have a Boundary
 func (mp *MultiPoint) OGCBoundary() T {
-	return NewMultiLineString(mp.layout)
+	return NewPointFlat(mp.layout, []float64{})
 }
 
-func (g *MultiPoint) OGCBoundaryDimensionality() ogc.Dimensionality {
-	return ogc.EmptyGeomDim
+func (g *MultiPoint) OGCBoundaryDimensionality() dimension.T {
+	return dimension.EmptyGeomDim
 }
 
 // Area returns zero.
