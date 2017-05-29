@@ -199,7 +199,7 @@ func (b *Builder) MultiLineString(allGeoms bool) (lines *MultiLineString, err *B
 		}
 	}
 	numGeoms := len(b.parts) - i + 1
-	coords := make([]float64, 0, numGeoms*b.layout.Stride())
+	coords := []float64{}
 	ends := make([]int, 0, numGeoms)
 
 	for ; i < len(b.parts); i++ {
@@ -230,7 +230,44 @@ func (b *Builder) Polygon() (poly *Polygon, err *BuilderError) {
 	return NewPolygonFlat(b.layout, b.current.data, b.current.ends), nil
 }
 func (b *Builder) MultiPolygon(allGeoms bool) (polys *MultiPolygon, err *BuilderError) {
-	return nil, nil
+	b.validateGeomType("Polygon", polygonType)
+
+	if b.err != nil {
+		return nil, b.err
+	}
+
+	b.endGeom()
+
+	if b.err != nil {
+		return nil, b.err
+	}
+
+	i := 0
+	if !allGeoms {
+		i = len(b.parts)
+		for ; i >= 1 && b.parts[i-1].partType == polygonType; i-- {
+		}
+	}
+	numGeoms := len(b.parts) - i
+	coords := []float64{}
+	endss := make([][]int, 0, numGeoms)
+
+	for ; i < len(b.parts); i++ {
+		if b.parts[i].partType != polygonType {
+			b.err = &BuilderError{fmt.Sprintf("The geometry at index %d was not a polygon it was a '%v'", i, b.parts[i].partType), debug.Stack()}
+			return nil, b.err
+		}
+
+		lenCoords := len(coords)
+		ends := make([]int, len(b.parts[i].ends))
+		for j, v := range b.parts[i].ends {
+			ends[j] = v + lenCoords
+		}
+		endss = append(endss, ends)
+		coords = append(coords, b.parts[i].data...)
+	}
+
+	return NewMultiPolygonFlat(b.layout, coords, endss), nil
 }
 
 func (b *Builder) validateNextCoord(methodName string, coord []float64) {
@@ -243,7 +280,7 @@ func (b *Builder) validateNextCoord(methodName string, coord []float64) {
 func (b *Builder) startGeom(methodName string, partType partType, coord []float64, continueFromLastGeom bool) *Builder {
 	if !continueFromLastGeom || len(coord) != 0 {
 		b.validateNextCoord(methodName, coord)
-	} else if len(b.parts) == 0 || len(b.parts[len(b.parts)-1].data) == 0 {
+	} else if len(b.current.data) == 0 && (len(b.parts) == 0 || len(b.parts[len(b.parts)-1].data) == 0) {
 		b.err = &BuilderError{fmt.Sprintf("%v() can only be used when a geometry has already been created", methodName), debug.Stack()}
 	}
 	b.endGeom()
@@ -269,7 +306,8 @@ func (b *Builder) endGeom() {
 	case nullType:
 		b.current = part{partType: nullType}
 	case polygonType:
-	//todo
+		b.CloseRing()
+		b.parts = append(b.parts, b.current)
 	default:
 		b.parts = append(b.parts, b.current)
 	}

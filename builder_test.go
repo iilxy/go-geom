@@ -51,7 +51,7 @@ func TestBuilder_Point_MissingGoTo(t *testing.T) {
 		t.Error("geom.Build(geom.XYZ).Point() should have returned an error")
 	}
 
-	if !strings.Contains(err.Msg, "A point cannot be created") {
+	if !strings.Contains(err.Msg, "A Point cannot be created because") {
 		t.Errorf("geom.Build(geom.XYZ).Point() returned the wrong error message: %v", err)
 	}
 
@@ -123,7 +123,7 @@ func TestBuilder_MultiPoint_NotAllPoints(t *testing.T) {
 	mp, err := geom.Build(geom.XY).StartLine(-1, -1).LineTo(-2, -2).StartPoint(1, 1).StartPoint(3, 3).StartPoint(2, 2).MultiPoint(true)
 
 	if err == nil {
-		t.Fatalf("geom.Build(geom.XY).StartLine(-1, -1).LineTo(-2, -2).StartPoint(1, 1).StartPoint(3, 3).StartPoint(2, 2).MultiPoint(true) should have given an error")
+		t.Fatal("geom.Build(geom.XY).StartLine(-1, -1).LineTo(-2, -2).StartPoint(1, 1).StartPoint(3, 3).StartPoint(2, 2).MultiPoint(true) should have given an error")
 	}
 
 	if !strings.Contains(err.Msg, "was not a point") {
@@ -143,7 +143,7 @@ func TestBuilder_Line(t *testing.T) {
 	}
 
 	if line == nil {
-		t.Fatalf("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).LineString() should have produced line but did not")
+		t.Fatal("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).LineString() should have produced line but did not")
 	}
 
 	if line.Layout() != geom.XY {
@@ -164,7 +164,7 @@ func TestBuilder_Line_Continue(t *testing.T) {
 	}
 
 	if line == nil {
-		t.Fatalf("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).StartLine(20, 20).LineTo(30, 0).LineString() should have produced line but did not")
+		t.Fatal("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).StartLine(20, 20).LineTo(30, 0).LineString() should have produced line but did not")
 	}
 
 	if line.Layout() != geom.XY {
@@ -185,7 +185,7 @@ func TestBuilder_Line_Continue2(t *testing.T) {
 	}
 
 	if line == nil {
-		t.Fatalf("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).StartLine().LineTo(30, 0).LineString() should have produced line but did not")
+		t.Fatal("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).StartLine().LineTo(30, 0).LineString() should have produced line but did not")
 	}
 
 	if line.Layout() != geom.XY {
@@ -238,7 +238,7 @@ func TestBuilder_Close(t *testing.T) {
 	}
 
 	if line == nil {
-		t.Fatalf("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).LineTo(10, 20).CloseRing().LineString() should have produced line but did not")
+		t.Fatal("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).LineTo(10, 20).CloseRing().LineString() should have produced line but did not")
 	}
 
 	if line.Layout() != geom.XY {
@@ -259,7 +259,7 @@ func TestBuilder_Close_OnlyCloseWhenRequired(t *testing.T) {
 	}
 
 	if line == nil {
-		t.Fatalf("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).LineTo(10, 20).CloseRing().LineString() should have produced line but did not")
+		t.Fatal("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).LineTo(10, 20).CloseRing().LineString() should have produced line but did not")
 	}
 
 	if line.Layout() != geom.XY {
@@ -276,7 +276,7 @@ func TestBuilder_Close_InsufficientCoords(t *testing.T) {
 	line, err := geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).CloseRing().LineString()
 
 	if err == nil {
-		t.Fatalf("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).CloseRing().LineString() should have produced an error")
+		t.Fatal("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).CloseRing().LineString() should have produced an error")
 	}
 
 	if !strings.Contains(err.Msg, "at least 3 coordinates") {
@@ -292,7 +292,7 @@ func TestBuilder_Close_NeedsStart(t *testing.T) {
 	line, err := geom.Build(geom.XY).CloseRing().LineString()
 
 	if err == nil {
-		t.Fatalf("geom.Build(geom.XY).CloseRing().LineString() should have produced an error")
+		t.Fatal("geom.Build(geom.XY).CloseRing().LineString() should have produced an error")
 	}
 
 	if !strings.Contains(err.Msg, "must be started") {
@@ -312,7 +312,7 @@ func TestBuilder_LinearRing(t *testing.T) {
 	}
 
 	if line == nil {
-		t.Fatalf("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).LineTo(10, 15).LinearRing() should have produced line but did not")
+		t.Fatal("geom.Build(geom.XY).StartLine(1, 1).LineTo(10, 10).LineTo(10, 15).LinearRing() should have produced line but did not")
 	}
 
 	if line.Layout() != geom.XY {
@@ -333,7 +333,7 @@ func TestBuilder_AddLineSegments(t *testing.T) {
 	}
 
 	if line == nil {
-		t.Fatalf("geom.Build(geom.XY).StartLine(1, 1).AddLineSegments(geom.Coord{10, 10}, geom.Coord{10, 20}).LineString() should have produced line but did not")
+		t.Fatal("geom.Build(geom.XY).StartLine(1, 1).AddLineSegments(geom.Coord{10, 10}, geom.Coord{10, 20}).LineString() should have produced line but did not")
 	}
 
 	if line.Layout() != geom.XY {
@@ -356,7 +356,7 @@ func TestBuilder_MultiLineString(t *testing.T) {
 	}
 
 	if ml == nil {
-		t.Fatalf("geom.Build(geom.XY).....MultiLineString() should have produced MultiLineString but did not")
+		t.Fatal("geom.Build(geom.XY).....MultiLineString() should have produced MultiLineString but did not")
 	}
 
 	if ml.Layout() != geom.XY {
@@ -387,7 +387,7 @@ func TestBuilder_Polygon(t *testing.T) {
 	}
 
 	if polygon == nil {
-		t.Fatalf("geom.Build(geom.XY).....Polygon() should have produced polygon but did not")
+		t.Fatal("geom.Build(geom.XY).....Polygon() should have produced polygon but did not")
 	}
 
 	if polygon.Layout() != geom.XY {
@@ -406,4 +406,75 @@ func TestBuilder_Polygon(t *testing.T) {
 	if !reflect.DeepEqual(polygon.Ends(), expectedEnds) {
 		t.Errorf("geom.Build(geom.XY).....Polygon() produced a polygon with the wrong ends.  Was %v wanted %v", polygon.Ends(), expectedEnds)
 	}
+}
+
+func TestBuilder_MultiPolygon_AllGeomsFalse(t *testing.T) {
+	multipolygon, err := geom.Build(geom.XY).
+		StartPoint(1, 1).
+		StartPolygon(1, 1).LineTo(10, 0).LineTo(10, 10).
+		StartPolygon(-1, -1).LineTo(-10, 0).LineTo(-10, -10).
+		StartPolygon(21, 21).LineTo(30, 20).LineTo(30, 30).
+		MultiPolygon(false)
+
+	validationsForMultiPolygon(multipolygon, err, t)
+}
+
+func TestBuilder_MultiPolygon_AllGeomsTrue(t *testing.T) {
+	multipolygon, err := geom.Build(geom.XY).
+		StartPolygon(1, 1).LineTo(10, 0).LineTo(10, 10).
+		StartPolygon(-1, -1).LineTo(-10, 0).LineTo(-10, -10).
+		StartPolygon(21, 21).LineTo(30, 20).LineTo(30, 30).
+		MultiPolygon(true)
+
+	validationsForMultiPolygon(multipolygon, err, t)
+}
+
+func validationsForMultiPolygon(multipolygon *geom.MultiPolygon, err *geom.BuilderError, t *testing.T) {
+	if err != nil {
+		t.Fatalf("geom.Build(geom.XY)....MultiPolygon() should not have produced an error: %v", err)
+	}
+
+	if multipolygon == nil {
+		t.Fatal("geom.Build(geom.XY).....MultiPolygon() should have produced MultiPolygon but did not")
+	}
+
+	if multipolygon.Layout() != geom.XY {
+		t.Errorf("geom.Build(geom.XY).....MultiPolygon() produced a MultiPolygon with the wrong layout.  Was %v wanted %v", multipolygon.Layout(), geom.XY)
+	}
+	expectedCoords := []float64{
+		1, 1, 10, 0, 10, 10, 1, 1,
+		-1, -1, -10, 0, -10, -10, -1, -1,
+		21, 21, 30, 20, 30, 30, 21, 21,
+	}
+
+	if !reflect.DeepEqual(multipolygon.FlatCoords(), expectedCoords) {
+		t.Errorf("geom.Build(geom.XY).....MultiPolygon() produced a MultiPolygon with the wrong coords.  Was %v wanted %v", multipolygon.FlatCoords(), expectedCoords)
+	}
+
+	if multipolygon.Ends() != nil {
+		t.Errorf("geom.Build(geom.XY).....MultiPolygon() produced a MultiPolygon with the wrong ends.  Was %v wanted %v", multipolygon.Ends(), nil)
+	}
+
+	expectedEndss := [][]int{[]int{8}, []int{16}, []int{24}}
+	if !reflect.DeepEqual(multipolygon.Endss(), expectedEndss) {
+		t.Errorf("geom.Build(geom.XY).....MultiPolygon() produced a MultiPolygon with the wrong endss.  Was %v wanted %v", multipolygon.Endss(), expectedEndss)
+	}
+}
+
+func TestBuilder_MultiPolygon_Error_IncorrectMemberType(t *testing.T) {
+	multipolygon, err := geom.Build(geom.XY).
+		StartPoint(1, 1).
+		StartPolygon(1, 1).LineTo(10, 0).LineTo(10, 10).
+		StartPolygon(-1, -1).LineTo(-10, 0).LineTo(-10, -10).
+		StartPolygon(21, 21).LineTo(30, 20).LineTo(30, 30).
+		MultiPolygon(true)
+
+	if err == nil {
+		t.Fatal("geom.Build(geom.XY)....MultiPolygon() should have produced an error but it did not")
+	}
+
+	if multipolygon != nil {
+		t.Fatalf("geom.Build(geom.XY).....MultiPolygon() should not have produced MultiPolygon: %v", multipolygon)
+	}
+
 }
